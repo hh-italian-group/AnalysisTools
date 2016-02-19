@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ $# -ne 2 ]] ; then
+	echo "Description: move file or directory on SRM."
+	echo "Usage: file_name new_file_name"
+	exit
+fi
+
+FILE_NAME="$1"
+NEW_FILE_NAME="$2"
+
+srmmv "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$FILE_NAME" "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$NEW_FILE_NAME"

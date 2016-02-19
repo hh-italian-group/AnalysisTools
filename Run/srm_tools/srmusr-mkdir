@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [[ $# -ne 1 ]] ; then
+	echo "Description: create directory on SRM."
+	echo "Usage: srm_dir_name"
+	exit
+fi
+
+REMOTE_DIR="$1"
+
+srmmkdir -2 "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$REMOTE_DIR"

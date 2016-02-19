@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [[ $# -ne 2 ]] ; then
+	echo "Description: remove files that matches pattern from SRM directory."
+	echo "Usage: srm_dir_name file_name_pattern"
+	exit
+fi
+
+REMOTE_DIR="$1"
+FILE_NAME_PATTERN="$2"
+
+LOCAL_SRM_PATH=/gpfs/ddn/srm/cms
+
+LOCAL_DIR=$LOCAL_SRM_PATH/$REMOTE_DIR
+
+cd $LOCAL_DIR
+
+find . -type f -name "$FILE_NAME_PATTERN" -printf "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$REMOTE_DIR/%p\\0" \
+	| xargs -0 -r lcg-del -b -l -D srmv2
+

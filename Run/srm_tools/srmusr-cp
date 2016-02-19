@@ -1,0 +1,46 @@
+#!/bin/bash
+
+if [[ $# -ne 3 ]] ; then
+	echo "Description: copy all files that matches the pattern from the local directory into the SRM directory."
+	echo "Usage: local_dir_name name_pattern srm_dir_name"
+	exit
+fi
+
+LOCAL_SRM_PATH=/gpfs/ddn/srm/cms
+TIMEOUT=600
+NUMBER_OF_STREAMS=4
+
+LOCAL_DIR="$1"
+NAME_PATTERN="$2"
+REMOTE_DIR="$3"
+cd "$LOCAL_DIR"
+LOCAL_DIR_PATH="$( pwd )"
+
+FILES=$( find . -maxdepth 1 -type f -name "$NAME_PATTERN" -printf "%f\n" )
+
+for NAME in $FILES ; do
+	WATCHDOG_KILLED=1
+	while [ $WATCHDOG_KILLED -ne 0 ] ; do
+		SRM_NAME="$REMOTE_DIR/$NAME"
+		LOCAL_SRM_NAME="$LOCAL_SRM_PATH/$SRM_NAME"
+		if [ -f "$LOCAL_SRM_NAME" ] ; then
+			FILE_SIZE=$( stat -c%s "$NAME" )
+			SRM_FILE_SIZE=$( stat -c%s "$LOCAL_SRM_NAME" )
+			if [ $FILE_SIZE -eq $SRM_FILE_SIZE ] ; then
+				echo "File $NAME is already transfered to SRM."
+				WATCHDOG_KILLED=0
+				continue
+			fi
+			echo "Removing partially transfered file $SRM_NAME from SRM..."
+			#srmrm -2 "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$SRM_NAME"
+			lcg-del -b -l -D srmv2 "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$SRM_NAME"
+		fi
+		( lcg-cp --srm-timeout=$TIMEOUT --connect-timeout=$TIMEOUT -b -D srmv2 -v -n $NUMBER_OF_STREAMS\
+			"file:///$LOCAL_DIR_PATH/$NAME" "srm://stormfe1.pi.infn.it:8444/srm/managerv2?SFN=/cms/$SRM_NAME" ) & LCG_PID=$!
+		( sleep $TIMEOUT && kill -9 $LCG_PID ) & WATCHDOG_PID=$!
+		wait $LCG_PID
+		kill -9 $WATCHDOG_PID 2> /dev/null
+		WATCHDOG_KILLED=$?
+	done
+done
+

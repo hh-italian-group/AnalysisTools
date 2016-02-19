@@ -1,0 +1,10 @@
+#!/bin/bash
+
+REMOTE_DIR="$1"
+
+LOCAL_SRM_PATH=/gpfs/ddn/srm/cms
+
+LOCAL_DIR=$LOCAL_SRM_PATH/$REMOTE_DIR
+
+ls $LOCAL_DIR
+
