@@ -26,13 +26,18 @@ public:
     typedef root_ext::PdfPrinter Printer;
     //typedef root_ext::SimpleHistogramSource<TH1D, Double_t> MyHistogramSource;
 
-    template<typename ...Args>
     Print_Histogram(const std::string& outputFileName, const std::string& _histogramName, const std::string& _title,
-                    double _xMin, double _xMax, unsigned _rebin, bool _useLogX, bool _useLogY, const Args& ...args)
+                    double _xMin, double _xMax, unsigned _rebin, bool _useLogX, bool _useLogY,
+                    const std::vector<std::string>& args)
        : printer(outputFileName), histogramName(_histogramName), title(_title), xRange(_xMin, _xMax),
          useLogX(_useLogX), useLogY(_useLogY), source(_rebin)
     {
-        Initialize(args...);
+        for(const std::string& inputName : args) {
+            const size_t split_index = inputName.find_first_of(':');
+            const std::string fileName = inputName.substr(0, split_index);
+            const std::string tagName = inputName.substr(split_index + 1);
+            inputs.push_back(FileTagPair(fileName, tagName));
+        }
         for(const FileTagPair& fileTag : inputs) {
             auto file = root_ext::OpenRootFile(fileTag.first);
             source.Add(fileTag.second, file);
@@ -52,18 +57,6 @@ public:
     }
 
 private:
-    template<typename ...Args>
-    void Initialize(const std::string& inputName, const Args& ...args)
-    {
-        const size_t split_index = inputName.find_first_of(':');
-        const std::string fileName = inputName.substr(0, split_index);
-        const std::string tagName = inputName.substr(split_index + 1);
-        inputs.push_back(FileTagPair(fileName, tagName));
-        Initialize(args...);
-    }
-
-    void Initialize() {}
-
     void Print(const std::string& name, const std::string& title,
                std::string name_suffix = "", std::string title_suffix = "")
     {

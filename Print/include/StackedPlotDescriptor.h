@@ -15,10 +15,10 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TROOT.h>
 
 #include "RootPrintSource.h"
-#include "../include/TdrStyle.h"
-#include "../include/CMS_lumi.h"
+#include "TdrStyle.h"
+#include "CMS_lumi.h"
 
-#include "AnalysisBase/include/SmartHistogram.h"
+#include "AnalysisTools/Core/include/SmartHistogram.h"
 #include "../include/HttStyles.h"
 
 namespace analysis {

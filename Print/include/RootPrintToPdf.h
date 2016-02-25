@@ -5,6 +5,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
 
 #include <TROOT.h>
 #include <TStyle.h>
@@ -17,7 +18,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include "RootPrintSource.h"
 #include "TdrStyle.h"
-#include "StackedPlotDescriptor.h"
+//#include "StackedPlotDescriptor.h"
 
 namespace root_ext {
 
@@ -86,23 +87,23 @@ public:
         ++n_pages;
     }
 
-    void PrintStack(analysis::StackedPlotDescriptor& stackDescriptor)
-    {
-        if(!stackDescriptor.NeedDraw())
-            return;
-        canvas->cd();
-        canvas->SetTitle(stackDescriptor.GetTitle().c_str());
-        canvas->Clear();
-        stackDescriptor.Draw(*canvas);
-        canvas->Draw();
-        std::ostringstream print_options;
-        print_options << "Title:" << stackDescriptor.GetTitle();
-        const Int_t old_gErrorIgnoreLevel = gErrorIgnoreLevel;
-        gErrorIgnoreLevel = kWarning;
-        canvas->Print(output_file_name.c_str(), print_options.str().c_str());
-        gErrorIgnoreLevel = old_gErrorIgnoreLevel;
-        ++n_pages;
-    }
+//    void PrintStack(analysis::StackedPlotDescriptor& stackDescriptor)
+//    {
+//        if(!stackDescriptor.NeedDraw())
+//            return;
+//        canvas->cd();
+//        canvas->SetTitle(stackDescriptor.GetTitle().c_str());
+//        canvas->Clear();
+//        stackDescriptor.Draw(*canvas);
+//        canvas->Draw();
+//        std::ostringstream print_options;
+//        print_options << "Title:" << stackDescriptor.GetTitle();
+//        const Int_t old_gErrorIgnoreLevel = gErrorIgnoreLevel;
+//        gErrorIgnoreLevel = kWarning;
+//        canvas->Print(output_file_name.c_str(), print_options.str().c_str());
+//        gErrorIgnoreLevel = old_gErrorIgnoreLevel;
+//        ++n_pages;
+//    }
 
     ~PdfPrinter()
     {

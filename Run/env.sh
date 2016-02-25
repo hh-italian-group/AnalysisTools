@@ -4,9 +4,7 @@
 
 #cmsenv
 eval `scramv1 runtime -sh`
-export CMSSW_ROOT_PATH=$( cd "$CMSSW_DATA_PATH/.." ; pwd )
 export CMSSW_RELEASE_BASE_SRC="$CMSSW_RELEASE_BASE/src"
-export CMSSW_BASE_SRC="$CMSSW_BASE/src"
 
 export GCC_PATH=$( scram tool info gcc-ccompiler | grep GCC_CCOMPILER_BASE | sed s/GCC_CCOMPILER_BASE=// )
 export GCC_INCLUDE_PATH=$( find "$GCC_PATH/include/c++/" -maxdepth 1 -type d | tail -n 1 )
