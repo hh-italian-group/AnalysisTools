@@ -1,7 +1,6 @@
 /*! Template file to create wrapper for cxx executable script.
 This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
-#include <cstddef>
 #include "SOURCE"
 #include <TROOT.h>
 #include <iostream>
