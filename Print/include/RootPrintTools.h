@@ -188,7 +188,7 @@ public:
             : histogram(_histogram), plot_options(_plot_options) {}
     };
 
-    typedef std::vector<Histogram*> HistogramContainer;
+    using HistogramContainer = std::vector<Histogram*>;
 
 public:
     HistogramPlotter(const std::string& _title, const std::string& _axis_titleX, const std::string& _axis_titleY)

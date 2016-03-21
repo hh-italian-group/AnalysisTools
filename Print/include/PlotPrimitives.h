@@ -121,7 +121,7 @@ std::istream& operator>>(std::istream& s, Point<T, 1, positively_defined>& p)
 
 template<typename T>
 struct Box {
-    typedef Point<T, 2> Position;
+    using Position = Point<T, 2>;
     Box() {}
 
     Box(const Position& left_bottom, const Position& right_top) : _left_bottom(left_bottom), _right_top(right_top)
@@ -240,9 +240,9 @@ namespace detail {
 
 class ReferenceColorCollection {
 public:
-    typedef analysis::EnumNameMap<EColor> ColorNameMap;
-    typedef std::unordered_map<EColor, RelativeRange<int>, ColorNameMap::EnumHash> ColorRelativeRangeMap;
-    typedef std::unordered_map<EColor, Range<int>, ColorNameMap::EnumHash> ColorRangeMap;
+    using ColorNameMap = analysis::EnumNameMap<EColor>;
+    using ColorRelativeRangeMap = std::unordered_map<EColor, RelativeRange<int>, ColorNameMap::EnumHash>;
+    using ColorRangeMap = std::unordered_map<EColor, Range<int>, ColorNameMap::EnumHash>;
 
     static const ColorNameMap& GetReferenceColorNames()
     {
@@ -403,7 +403,7 @@ std::istream& operator>>(std::istream& s, Color& c)
 
 class Font {
 public:
-    typedef short Integer;
+    using Integer = short;
 
     Font() : _number(4), _precision(2) {}
     explicit Font(Integer font_code)

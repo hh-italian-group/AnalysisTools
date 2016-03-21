@@ -25,9 +25,9 @@ namespace analysis {
 
 class StackedPlotDescriptor {
 public:
-    typedef root_ext::SmartHistogram<TH1D> Histogram;
-    typedef std::shared_ptr<Histogram> hist_ptr;
-    typedef std::vector<hist_ptr> hist_ptr_vector;
+    using Histogram = root_ext::SmartHistogram<TH1D>;
+    using hist_ptr = std::shared_ptr<Histogram>;
+    using hist_ptr_vector = std::vector<hist_ptr>;
 
     StackedPlotDescriptor(const std::string& page_title, bool draw_title, const std::string& channelNameLatex,
                           const std::string& _categoryName, bool _draw_ratio, bool _drawBKGerrors)

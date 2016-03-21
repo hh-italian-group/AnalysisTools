@@ -8,9 +8,9 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 class Print_Selection {
 public:
-    typedef std::pair< std::string, std::string > FileTagPair;
-    typedef root_ext::PdfPrinter Printer;
-    typedef root_ext::SimpleHistogramSource<TH1D, Double_t> MyHistogramSource;
+    using FileTagPair = std::pair<std::string, std::string>;
+    using Printer = root_ext::PdfPrinter;
+    using MyHistogramSource = root_ext::SimpleHistogramSource<TH1D, Double_t>;
 
     Print_Selection(const std::string& outputFileName, const std::vector<std::string>& args):
        printer(outputFileName)

@@ -22,9 +22,8 @@ private:
 
 class Print_Histogram {
 public:
-    typedef std::pair< std::string, std::string > FileTagPair;
-    typedef root_ext::PdfPrinter Printer;
-    //typedef root_ext::SimpleHistogramSource<TH1D, Double_t> MyHistogramSource;
+    using FileTagPair = std::pair<std::string, std::string>;
+    using Printer = root_ext::PdfPrinter;
 
     Print_Histogram(const std::string& outputFileName, const std::string& _histogramName, const std::string& _title,
                     double _xMin, double _xMax, unsigned _rebin, bool _useLogX, bool _useLogY,

@@ -30,9 +30,8 @@ private:
 
 class Print_SmartHistogram {
 public:
-    typedef std::pair< std::string, std::string > FileTagPair;
-    typedef root_ext::PdfPrinter Printer;
-//    typedef root_ext::SimpleHistogramSource<TH1D, Double_t> MyHistogramSource;
+    using FileTagPair = std::pair<std::string, std::string>;
+    using Printer = root_ext::PdfPrinter;
 
     Print_SmartHistogram(const std::string& outputFileName, const std::string& _histogramName,
                          const std::string& _title, double _xMin, double _xMax, unsigned _nBins,  bool _useLogX,

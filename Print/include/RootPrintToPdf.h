@@ -123,8 +123,8 @@ private:
     template<typename Source>
     void DrawHistograms(const PageSide& page_side, const Source& source)
     {
-        typedef root_ext::HistogramPlotter<typename Source::Histogram, typename Source::ValueType> Plotter;
-        typedef root_ext::HistogramFitter<typename Source::Histogram, typename Source::ValueType> Fitter;
+        using Plotter = root_ext::HistogramPlotter<typename Source::Histogram, typename Source::ValueType>;
+        using Fitter = root_ext::HistogramFitter<typename Source::Histogram, typename Source::ValueType>;
 
         TPad* stat_pad = 0;
         if(page_side.layout.has_stat_pad) {

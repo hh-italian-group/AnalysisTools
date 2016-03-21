@@ -46,7 +46,7 @@ struct PageLayout {
 };
 
 struct Page {
-    typedef std::vector<const PageSide*> RegionCollection;
+    using RegionCollection = std::vector<const PageSide*>;
     std::string title;
     PageLayout layout;
 
@@ -141,11 +141,11 @@ struct DoubleSidedPage : public Page {
 template<typename HistogramType, typename _ValueType=Double_t, typename OriginalHistogramType=HistogramType>
 class HistogramSource {
 public:
-    typedef HistogramType Histogram;
-    typedef OriginalHistogramType OriginalHistogram;
-    typedef _ValueType ValueType;
-    typedef typename root_ext::HistogramPlotter<Histogram, ValueType>::Options PlotOptions;
-    typedef typename root_ext::HistogramPlotter<Histogram, ValueType>::Entry Entry;
+    using Histogram = HistogramType;
+    using OriginalHistogram = OriginalHistogramType;
+    using ValueType = _ValueType;
+    using PlotOptions = typename root_ext::HistogramPlotter<Histogram, ValueType>::Options;
+    using Entry = typename root_ext::HistogramPlotter<Histogram, ValueType>::Entry;
 
     static PlotOptions& GetDefaultPlotOptions(unsigned n)
     {

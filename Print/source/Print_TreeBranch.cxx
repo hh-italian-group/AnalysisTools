@@ -29,9 +29,8 @@ private:
 
 class Print_TreeBranch {
 public:
-    typedef std::pair< std::string, std::string > FileTagPair;
-    typedef root_ext::PdfPrinter Printer;
-//    typedef root_ext::SimpleHistogramSource<TH1D, Double_t> MyHistogramSource;
+    using FileTagPair = std::pair<std::string, std::string>;
+    using Printer = root_ext::PdfPrinter;
 
     template<typename ...Args>
     Print_TreeBranch(const std::string& outputFileName, const std::string& _treeName,
