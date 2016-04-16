@@ -10,7 +10,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TColor.h>
 #include <TAttText.h>
 #include "EnumNameMap.h"
-#include "RootPrimitives.h"
+#include "NumericPrimitives.h"
 
 namespace root_ext {
 
@@ -149,7 +149,8 @@ struct Box {
 
     static bool IsValid(const T& left_bottom_x, const T& left_bottom_y, const T& right_top_x, const T& right_top_y)
     {
-        return Range<T>::IsValid(left_bottom_x, right_top_x) && Range<T>::IsValid(left_bottom_y, right_top_y);
+        return analysis::Range<T>::IsValid(left_bottom_x, right_top_x)
+                && analysis::Range<T>::IsValid(left_bottom_y, right_top_y);
     }
 
 private:
@@ -241,8 +242,8 @@ namespace detail {
 class ReferenceColorCollection {
 public:
     using ColorNameMap = analysis::EnumNameMap<EColor>;
-    using ColorRelativeRangeMap = std::unordered_map<EColor, RelativeRange<int>, ColorNameMap::EnumHash>;
-    using ColorRangeMap = std::unordered_map<EColor, Range<int>, ColorNameMap::EnumHash>;
+    using ColorRelativeRangeMap = std::unordered_map<EColor, analysis::RelativeRange<int>, ColorNameMap::EnumHash>;
+    using ColorRangeMap = std::unordered_map<EColor, analysis::Range<int>, ColorNameMap::EnumHash>;
 
     static const ColorNameMap& GetReferenceColorNames()
     {
@@ -327,11 +328,13 @@ public:
             return true;
         }
         std::vector<std::string> sub_str;
-        boost::split(sub_str, str, boost::is_any_of("+"), boost::token_compress_on);
+        boost::split(sub_str, str, boost::is_any_of("+-"), boost::token_compress_on);
         if(sub_str.size() != 2 || !GetReferenceColorNames().TryParse(sub_str.at(0), e_color))
             return false;
         std::istringstream ss(sub_str.at(1));
         ss >> shift;
+        int sign = std::find(str.begin(), str.end(), '-') == str.end() ? 1 : -1;
+        shift *= sign;
         return !ss.fail();
     }
 };
@@ -365,7 +368,7 @@ public:
 private:
     static void CheckComponent(const std::string& name, int value)
     {
-        static const Range<int> color_range(0, 255);
+        static const analysis::Range<int> color_range(0, 255);
         if(!color_range.Contains(value))
             throw analysis::exception("Invalid color %1% component value = %2%") % name % value;
     }
@@ -430,8 +433,8 @@ public:
 
     static bool IsValid(Integer font_number, Integer precision)
     {
-        static const Range<Integer> font_number_range(1, 15);
-        static const Range<Integer> precision_range(0, 3);
+        static const analysis::Range<Integer> font_number_range(1, 15);
+        static const analysis::Range<Integer> precision_range(0, 3);
         return font_number_range.Contains(font_number) && precision_range.Contains(precision);
     }
 

@@ -1,7 +1,9 @@
 project(AnalysisTools)
 cmake_minimum_required(VERSION 2.6)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/modules")
 include("common.cmake")
+include_directories("Core/include")
 
 file(GLOB OTHER_LIST "Run/srm_tools/*")
 add_custom_target(others SOURCES ${OTHER_LIST})
