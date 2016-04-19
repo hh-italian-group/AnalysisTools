@@ -18,16 +18,16 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include "TdrStyle.h"
 #include "CMS_lumi.h"
 
-#include "AnalysisTools/Core/include/SmartHistogram.h"
-#include "../include/HttStyles.h"
+#include "SmartHistogram.h"
+#include "HttStyles.h"
 
 namespace analysis {
 
 class StackedPlotDescriptor {
 public:
-    using Histogram = root_ext::SmartHistogram<TH1D>;
-    using hist_ptr = std::shared_ptr<Histogram>;
-    using hist_ptr_vector = std::vector<hist_ptr>;
+    typedef root_ext::SmartHistogram<TH1D> Histogram;
+    typedef std::shared_ptr<Histogram> hist_ptr;
+    typedef std::vector<hist_ptr> hist_ptr_vector;
 
     StackedPlotDescriptor(const std::string& page_title, bool draw_title, const std::string& channelNameLatex,
                           const std::string& _categoryName, bool _draw_ratio, bool _drawBKGerrors)
@@ -58,7 +58,7 @@ public:
         }
 
         if (draw_ratio){
-            legend = std::shared_ptr<TLegend>(new TLegend (0.6, 0.55, 0.85, 0.90));
+            legend = std::shared_ptr<TLegend>(new TLegend (0.6, 0.7, 0.85, 0.90)); // 0.6, 0.55, 0.85, 0.90
         }
         else {
             legend = std::shared_ptr<TLegend>(new TLegend (0.52, 0.60, 0.89, 0.90));
@@ -267,18 +267,18 @@ public:
             if (drawBKGerrors){
                 sum_backgound_histogram->SetMarkerSize(0);
                 //new
-                int new_idx = root_ext::CreateTransparentColor(12,0.5);
-                sum_backgound_histogram->SetFillColor(new_idx);
-                sum_backgound_histogram->SetFillStyle(3001);
-                sum_backgound_histogram->SetLineWidth(0);
-                sum_backgound_histogram->Draw("e2same");
+                // int new_idx = root_ext::CreateTransparentColor(12,0.5);
+                // sum_backgound_histogram->SetFillColor(new_idx);
+                // sum_backgound_histogram->SetFillStyle(3001);
+                // sum_backgound_histogram->SetLineWidth(0);
+                // sum_backgound_histogram->Draw("e2same");
 //                end new
 
                   //old style for bkg uncertainties
-//                sum_backgound_histogram->SetFillColor(13);
-//                sum_backgound_histogram->SetFillStyle(3013);
-//                sum_backgound_histogram->SetLineWidth(1);
-//                sum_backgound_histogram->Draw("e2same");
+               sum_backgound_histogram->SetFillColor(13);
+               sum_backgound_histogram->SetFillStyle(3013);
+               sum_backgound_histogram->SetLineWidth(0);
+               sum_backgound_histogram->Draw("e2same");
             }
         }
 
@@ -305,7 +305,7 @@ public:
 
         cms_tdr::writeExtraText = true;
         cms_tdr::extraText = TString("Unpublished");
-        cms_tdr::CMS_lumi(main_pad.get(), 2, 11);
+        cms_tdr::CMS_lumi(main_pad.get(), 4, 11); //Labels Definition
 
 
         legend->Draw("same");
@@ -321,7 +321,7 @@ public:
             ratio_histogram = hist_ptr(new Histogram(*data_histogram));
             ratio_histogram->Divide(sum_backgound_histogram.get());
 
-            ratio_histogram->GetYaxis()->SetRangeUser(0.75,1.3);
+            ratio_histogram->GetYaxis()->SetRangeUser(0.5,1.5);
             ratio_histogram->GetYaxis()->SetNdivisions(505);
             ratio_histogram->GetYaxis()->SetLabelSize(0.11);
             ratio_histogram->GetYaxis()->SetTitleSize(0.14);

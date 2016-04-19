@@ -5,7 +5,6 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include <sstream>
 #include <stdexcept>
-#include <iostream>
 
 #include <TROOT.h>
 #include <TStyle.h>
@@ -18,7 +17,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include "RootPrintSource.h"
 #include "TdrStyle.h"
-//#include "StackedPlotDescriptor.h"
+#include "StackedPlotDescriptor.h"
 
 namespace root_ext {
 
@@ -82,28 +81,28 @@ public:
 
         canvas->Draw();
         std::ostringstream print_options;
-        print_options << "Title:" << page.title;
+        print_options << "Title: " << page.title;
         canvas->Print(output_file_name.c_str(), print_options.str().c_str());
         ++n_pages;
     }
 
-//    void PrintStack(analysis::StackedPlotDescriptor& stackDescriptor)
-//    {
-//        if(!stackDescriptor.NeedDraw())
-//            return;
-//        canvas->cd();
-//        canvas->SetTitle(stackDescriptor.GetTitle().c_str());
-//        canvas->Clear();
-//        stackDescriptor.Draw(*canvas);
-//        canvas->Draw();
-//        std::ostringstream print_options;
-//        print_options << "Title:" << stackDescriptor.GetTitle();
-//        const Int_t old_gErrorIgnoreLevel = gErrorIgnoreLevel;
-//        gErrorIgnoreLevel = kWarning;
-//        canvas->Print(output_file_name.c_str(), print_options.str().c_str());
-//        gErrorIgnoreLevel = old_gErrorIgnoreLevel;
-//        ++n_pages;
-//    }
+    void PrintStack(analysis::StackedPlotDescriptor& stackDescriptor)
+    {
+        if(!stackDescriptor.NeedDraw())
+            return;
+        canvas->cd();
+        canvas->SetTitle(stackDescriptor.GetTitle().c_str());
+        canvas->Clear();
+        stackDescriptor.Draw(*canvas);
+        canvas->Draw();
+        std::ostringstream print_options;
+        print_options << "Title: " << stackDescriptor.GetTitle();
+        const Int_t old_gErrorIgnoreLevel = gErrorIgnoreLevel;
+        gErrorIgnoreLevel = kWarning;
+        canvas->Print(output_file_name.c_str(), print_options.str().c_str());
+        gErrorIgnoreLevel = old_gErrorIgnoreLevel;
+        ++n_pages;
+    }
 
     ~PdfPrinter()
     {
@@ -123,8 +122,8 @@ private:
     template<typename Source>
     void DrawHistograms(const PageSide& page_side, const Source& source)
     {
-        using Plotter = root_ext::HistogramPlotter<typename Source::Histogram, typename Source::ValueType>;
-        using Fitter = root_ext::HistogramFitter<typename Source::Histogram, typename Source::ValueType>;
+        typedef root_ext::HistogramPlotter<typename Source::Histogram, typename Source::ValueType> Plotter;
+        typedef root_ext::HistogramFitter<typename Source::Histogram, typename Source::ValueType> Fitter;
 
         TPad* stat_pad = 0;
         if(page_side.layout.has_stat_pad) {

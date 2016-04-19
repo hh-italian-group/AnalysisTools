@@ -4,7 +4,7 @@
 #include "TLatex.h"
 #include "TLine.h"
 #include "TBox.h"
-#include "TASImage.h"
+//#include "TASImage.h"
 
 namespace cms_tdr {
 
@@ -33,7 +33,7 @@ float relExtraDY = 1.2;
 // ratio of "CMS" and extra text size
 float extraOverCmsTextSize  = 0.76;
 
-TString lumi_13TeV = "20.1 fb^{-1}";
+TString lumi_13TeV = "2.1 fb^{-1}";
 TString lumi_8TeV  = "19.7 fb^{-1}";
 TString lumi_7TeV  = "5.1 fb^{-1}";
 
@@ -60,8 +60,8 @@ CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
   if( iPosX == 0  ) relPosX = 0.12;
   int align_ = 10*alignX_ + alignY_;
 
-  float H = pad->GetWh();
-  float W = pad->GetWw();
+//  float H = pad->GetWh();
+//  float W = pad->GetWw();
   float l = pad->GetLeftMargin();
   float t = pad->GetTopMargin();
   float r = pad->GetRightMargin();
@@ -154,19 +154,19 @@ CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
     {
       if( drawLogo )
     {
-      posX_ =   l + 0.045*(1-l-r)*W/H;
-      posY_ = 1-t - 0.045*(1-t-b);
-      float xl_0 = posX_;
-      float yl_0 = posY_ - 0.15;
-      float xl_1 = posX_ + 0.15*H/W;
-      float yl_1 = posY_;
-      TASImage* CMS_logo = new TASImage("CMS-BW-label.png");
-      TPad* pad_logo = new TPad("logo","logo", xl_0, yl_0, xl_1, yl_1 );
-      pad_logo->Draw();
-      pad_logo->cd();
-      CMS_logo->Draw("X");
-      pad_logo->Modified();
-      pad->cd();
+//      posX_ =   l + 0.045*(1-l-r)*W/H;
+//      posY_ = 1-t - 0.045*(1-t-b);
+//      float xl_0 = posX_;
+//      float yl_0 = posY_ - 0.15;
+//      float xl_1 = posX_ + 0.15*H/W;
+//      float yl_1 = posY_;
+//      TASImage* CMS_logo = new TASImage("CMS-BW-label.png");
+//      TPad* pad_logo = new TPad("logo","logo", xl_0, yl_0, xl_1, yl_1 );
+//      pad_logo->Draw();
+//      pad_logo->cd();
+//      CMS_logo->Draw("X");
+//      pad_logo->Modified();
+//      pad->cd();
     }
       else
     {
