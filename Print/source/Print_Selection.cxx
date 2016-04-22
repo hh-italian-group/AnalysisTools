@@ -3,8 +3,14 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include <iostream>
 
+#include "AnalysisTools/Run/include/program_main.h"
 #include "AnalysisTools/Core/include/RootExt.h"
 #include "../include/RootPrintToPdf.h"
+
+struct Arguments {
+    REQ_ARG(std::string, outputFileName);
+    REQ_ARG(std::vector<std::string>, args);
+};
 
 class Print_Selection {
 public:
@@ -12,10 +18,10 @@ public:
     using Printer = root_ext::PdfPrinter;
     using MyHistogramSource = root_ext::SimpleHistogramSource<TH1D, Double_t>;
 
-    Print_Selection(const std::string& outputFileName, const std::vector<std::string>& args):
-       printer(outputFileName)
+    Print_Selection(const Arguments& arguments):
+       printer(arguments.outputFileName())
     {
-        for(const std::string& inputName : args) {
+        for(const std::string& inputName : arguments.args()) {
             const size_t split_index = inputName.find_first_of(':');
             const std::string fileName = inputName.substr(0, split_index);
             const std::string tagName = inputName.substr(split_index + 1);
@@ -37,8 +43,6 @@ public:
         PrintAll("Selection_taus", "Tau selection");
         PrintAll("Selection_electrons_bkg", "Bkg Electron selection");
         PrintAll("Selection_bjets", "b-jet selection");
-
-
     }
 
 private:
@@ -76,3 +80,5 @@ private:
     root_ext::SingleSidedPage page;
     Printer printer;
 };
+
+PROGRAM_MAIN(Print_Selection, Arguments)

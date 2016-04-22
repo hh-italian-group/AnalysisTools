@@ -12,15 +12,19 @@ fi
 
 function make_target_list {
     local prj="$1"
-    TARGET_LIST=$( cd "$prj" && make help \
-    | grep -v -e "\(^[^\.]\|^\.\.\. \(${prj}\|all\|clean\|depend\|edit_cache\|rebuild_cache\|others\|configs\|scripts\|sources\|headers\|wrappers\)\)" \
-    | sed 's/^\.\.\. //')
+    local root_targets=$( cd "$prj" && make help | grep -v -e "\(^[^\.]\|/\)" | sed 's/^\.\.\. //' )
+    TARGET_LIST=$( echo "$root_targets" \
+        | grep -v -e "\(${prj}\|all\|clean\|depend\|edit_cache\|rebuild_cache\|others\|configs\|scripts\|sources\|headers\|wrappers\)")
+
+#    TARGET_LIST=$( cd "$prj" && make help \
+#    | grep -v -e "\(^[^\.]\|^\.\.\. \(${prj}\|all\|clean\|depend\|edit_cache\|rebuild_cache\|others\|configs\|scripts\|sources\|headers\|wrappers\)\)" \
+#    | sed 's/^\.\.\. //')
 }
 
 NAME=$1
 
 if [ "$CMSSW_BASE/" = "/" ] ; then
-    BUILD_PATH="build"
+    BUILD_PATH="./build"
 else
     BUILD_PATH="$CMSSW_BASE/build"
 fi
@@ -48,7 +52,7 @@ for PROJECT in $PROJECTS ; do
                 echo "ERROR: failed to compile $NAME."
                 exit
             fi
-            EXE_NAME="./$BUILD_PATH/$PROJECT/$NAME"
+            EXE_NAME="$BUILD_PATH/$PROJECT/$NAME"
             break
         fi
     fi

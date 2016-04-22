@@ -42,23 +42,11 @@ add_custom_target(configs SOURCES ${CONFIG_LIST})
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -O3")
 
-set(make_wrapper_dir "${AnalysisTools_DIR}/Run/python")
-set(make_wrapper_script "make_wrapper")
-set(wrapper_template "${AnalysisTools_DIR}/Run/source/WrapperTemplate.cpp")
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/wrappers")
-
 set(EXE_LIST)
 foreach(exe_source ${EXE_SOURCE_LIST})
-    execute_process(COMMAND basename ${exe_source} OUTPUT_VARIABLE exe_source_basename OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(REPLACE ".cxx" "" exe_name "${exe_source_basename}")
-    set(src_wrapper "${CMAKE_BINARY_DIR}/wrappers/${exe_name}.cpp")
-    add_custom_command(OUTPUT "${src_wrapper}"
-                       COMMAND python -c "import ${make_wrapper_script}; ${make_wrapper_script}.main( [\"${wrapper_template}\", \"${exe_source}\", \"${src_wrapper}\"] )"
-                       IMPLICIT_DEPENDS CXX "${exe_source}" "${wrapper_template}"
-                       WORKING_DIRECTORY "${make_wrapper_dir}"
-                       VERBATIM)
+    get_filename_component(exe_name "${exe_source}" NAME_WE)
     message("Adding executable \"${exe_name}\"...")
-    add_executable("${exe_name}" "${src_wrapper}")
+    add_executable("${exe_name}" "${exe_source}")
     target_link_libraries("${exe_name}" ${ALL_LIBS})
     list(APPEND EXE_LIST "${exe_name}")
 endforeach()

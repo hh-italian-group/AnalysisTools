@@ -3,6 +3,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include <TTree.h>
 
+#include "AnalysisTools/Run/include/program_main.h"
 #include "AnalysisTools/Core/include/RootExt.h"
 #include "../include/RootPrintToPdf.h"
 
@@ -28,18 +29,27 @@ private:
     unsigned nBins;
 };
 
+struct Arguments {
+    REQ_ARG(std::string, outputFileName);
+    REQ_ARG(std::string, histogramName);
+    REQ_ARG(std::string, title);
+    REQ_ARG(double, xMin);
+    REQ_ARG(double, xMax);
+    REQ_ARG(unsigned, nBins);
+    REQ_ARG(bool, useLogX);
+    REQ_ARG(bool, useLogY);
+    REQ_ARG(std::vector<std::string>, inputs);
+};
+
 class Print_SmartHistogram {
 public:
     using FileTagPair = std::pair<std::string, std::string>;
     using Printer = root_ext::PdfPrinter;
 
-    Print_SmartHistogram(const std::string& outputFileName, const std::string& _histogramName,
-                         const std::string& _title, double _xMin, double _xMax, unsigned _nBins,  bool _useLogX,
-                         bool _useLogY, const std::vector<std::string>& args)
-       : printer(outputFileName), histogramName(_histogramName), title(_title), xRange(_xMin, _xMax), nBins(_nBins),
-         useLogX(_useLogX), useLogY(_useLogY), source(xRange, nBins)
+    Print_SmartHistogram(const Arguments& _args)
+       : args(_args), printer(args.outputFileName()), xRange(args.xMin(), args.xMax()), source(xRange, args.nBins())
     {
-        for(const std::string& inputName : args) {
+        for(const std::string& inputName : args.inputs()) {
             const size_t split_index = inputName.find_first_of(':');
             const std::string fileName = inputName.substr(0, split_index);
             const std::string tagName = inputName.substr(split_index + 1);
@@ -53,13 +63,13 @@ public:
 
     void Run()
     {
-        page.side.use_log_scaleX = useLogX;
-        page.side.use_log_scaleY = useLogY;
+        page.side.use_log_scaleX = args.useLogX();
+        page.side.use_log_scaleY = args.useLogY();
         page.side.xRange = xRange;
         page.side.fit_range_x = false;
         page.side.layout.has_legend = false;
 
-        Print(histogramName, title);
+        Print(args.histogramName(), args.title());
     }
 
 private:
@@ -81,12 +91,12 @@ private:
     }
 
 private:
+    Arguments args;
     std::vector<FileTagPair> inputs;
     root_ext::SingleSidedPage page;
     Printer printer;
-    std::string histogramName, title;
     root_ext::Range xRange;
-    unsigned nBins;
-    bool useLogX, useLogY;
     MyHistogramSource source;
 };
+
+PROGRAM_MAIN(Print_SmartHistogram, Arguments)
