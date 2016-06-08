@@ -36,7 +36,7 @@ file(GLOB_RECURSE EXE_SOURCE_LIST "*.cxx")
 file(GLOB_RECURSE SCRIPT_LIST "*.sh" "*.py")
 add_custom_target(scripts SOURCES ${SCRIPT_LIST})
 
-file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml")
+file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml" "*.txt")
 add_custom_target(configs SOURCES ${CONFIG_LIST})
 
 set(CMAKE_CXX_COMPILER g++)
