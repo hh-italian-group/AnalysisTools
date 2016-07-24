@@ -42,11 +42,19 @@ add_custom_target(configs SOURCES ${CONFIG_LIST})
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -O3")
 
+set(LinkDef "${AnalysisTools_DIR}/Core/include/LinkDef.h")
+set(RootDict "${CMAKE_BINARY_DIR}/RootDictionaries.cpp")
+set(RootDictIncludes "Math/LorentzVector.h" "Math/PtEtaPhiM4D.h" "Math/PtEtaPhiE4D.h" "Math/PxPyPzM4D.h")
+add_custom_command(OUTPUT "${RootDict}"
+                   COMMAND rootcling -f "${RootDict}" ${RootDictIncludes} "${LinkDef}"
+                   IMPLICIT_DEPENDS CXX "${LinkDef}"
+                   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+                   VERBATIM)
 set(EXE_LIST)
 foreach(exe_source ${EXE_SOURCE_LIST})
     get_filename_component(exe_name "${exe_source}" NAME_WE)
     message("Adding executable \"${exe_name}\"...")
-    add_executable("${exe_name}" "${exe_source}")
+    add_executable("${exe_name}" "${exe_source}" "${RootDict}")
     target_link_libraries("${exe_name}" ${ALL_LIBS})
     list(APPEND EXE_LIST "${exe_name}")
 endforeach()
