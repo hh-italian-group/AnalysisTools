@@ -5,6 +5,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include <mutex>
 #include <queue>
+#include <condition_variable>
 
 namespace run {
 

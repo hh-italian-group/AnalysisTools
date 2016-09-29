@@ -119,6 +119,16 @@ struct ArgumentMultiplicity { static int Get() { return 1; } };
 template<typename T>
 struct ArgumentMultiplicity<std::vector<T>> { static int Get() { return -1; } };
 
+template<typename OptValue, typename T>
+struct DefaultValueSetter {
+    static void Set(OptValue& opt_value, const T& default_value) { opt_value->default_value(default_value); }
+};
+
+template<typename OptValue, typename T>
+struct DefaultValueSetter<OptValue, std::vector<T>> {
+    static void Set(OptValue&, const std::vector<T>&) {}
+};
+
 } // namespace detail
 
 template<typename T>
@@ -141,7 +151,7 @@ struct Argument : public ArgumentBase {
         if(required)
             opt_value->required();
         else
-            opt_value->default_value(val);
+            detail::DefaultValueSetter<decltype(opt_value), Value>::Set(opt_value, val);
         options_desc.add_options()(name.c_str(), opt_value, description.c_str());
         pos_desc.add(name.c_str(), detail::ArgumentMultiplicity<Value>::Get());
     }
