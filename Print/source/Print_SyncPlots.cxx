@@ -68,7 +68,46 @@ public:
         for(size_t n = 0; n < config.GetEntries().size(); ++n) {
             const SyncPlotEntry& entry = config.GetEntries().at(n);
             isLastDraw = n + 1 == config.GetEntries().size();
-            drawHistos(entry.mine_name, entry.other_name, entry.n_bins, entry.x_range.min(), entry.x_range.max());
+
+            if(entry.my_condition.always_true && entry.other_condition.always_true) {
+                drawHistos(entry.my_name, entry.other_name, entry.n_bins, entry.x_range.min(), entry.x_range.max());
+                continue;
+            }
+
+            std::vector<int> my_vars_int, other_vars_int;
+            std::vector<double> my_vars_double, other_vars_double;
+            if(!entry.my_condition.always_true) {
+                if(entry.my_condition.is_integer)
+                    my_vars_int = CollectValuesEx<int>(Tmine, entry.my_condition.entry);
+                else
+                    my_vars_double = CollectValuesEx<double>(Tmine, entry.my_condition.entry);
+            }
+            if(!entry.other_condition.always_true) {
+                if(entry.other_condition.is_integer)
+                    other_vars_int = CollectValuesEx<int>(Tother, entry.other_condition.entry);
+                else
+                    other_vars_double = CollectValuesEx<double>(Tother, entry.other_condition.entry);
+            }
+
+            std::ostringstream selection_label;
+            if(!entry.my_condition.always_true)
+                selection_label << entry.my_condition;
+            else
+                selection_label << entry.other_condition;
+
+            const auto my_selector = [&](size_t n) -> bool {
+                if(entry.my_condition.always_true) return true;
+                if(entry.my_condition.is_integer) return entry.my_condition.pass_int(my_vars_int.at(n));
+                return entry.my_condition.pass_double(my_vars_double.at(n));
+            };
+            const auto other_selector = [&](size_t n) -> bool {
+                if(entry.other_condition.always_true) return true;
+                if(entry.other_condition.is_integer) return entry.other_condition.pass_int(other_vars_int.at(n));
+                return entry.other_condition.pass_double(other_vars_double.at(n));
+            };
+
+            drawHistos(entry.my_name, entry.other_name, entry.n_bins, entry.x_range.min(), entry.x_range.max(),
+                       my_selector, other_selector, selection_label.str());
         }
     }
 
