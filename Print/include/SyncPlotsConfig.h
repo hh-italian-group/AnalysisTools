@@ -6,6 +6,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <vector>
 #include <fstream>
 #include <numeric>
+#include <iostream>
 #include <boost/algorithm/string.hpp>
 #include "AnalysisTools/Core/include/ConfigReader.h"
 #include "AnalysisTools/Core/include/NumericPrimitives.h"
@@ -174,7 +175,7 @@ std::istream& operator >>(std::istream& s, SyncPlotEntry& entry)
     std::vector<std::string> params = ConfigEntryReader::ParseOrderedParameterList(line, true);
 
     try {
-        if(params.size() >= 4 && params.size() <= 6) {
+        if(params.size() >= 4 && params.size() <= 7) {
             size_t n = 0;
             entry.my_name = params.at(n++);
 
@@ -201,7 +202,7 @@ std::istream& operator >>(std::istream& s, SyncPlotEntry& entry)
 
             return s;
         }
-    } catch(exception&) {}
+    } catch(exception& e) { std::cerr << "ERROR: " << e.what() << std::endl; }
 
     throw exception("Invalid plot entry '%1%'") % line;
 }
