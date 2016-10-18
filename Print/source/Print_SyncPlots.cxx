@@ -154,7 +154,7 @@ private:
                 return createHist("Hother" + mine_var + suffix);
             };
             const auto create2DHist = [&](const std::string& name) -> Hist2DPtr {
-                return Hist2DPtr(new Hist2D(name.c_str(), "", nbins, xmin, xmax, 40, -1.0, 1.0));
+                return Hist2DPtr(new Hist2D(name.c_str(), "", nbins, xmin, xmax, 61, -1.525, 1.525));
             };
 
             auto Hmine_all = createMineHist("all");
@@ -305,7 +305,7 @@ private:
         const std::string other_name = other_var + "_other";
         std::ostringstream y_name;
         y_name << "(" << other_name << " - " << my_name << ")/" << other_name;
-        Hmine_vs_other->GetXaxis()->SetTitle(my_name.c_str());
+        Hmine_vs_other->GetXaxis()->SetTitle(other_name.c_str());
         Hmine_vs_other->GetYaxis()->SetTitle(y_name.str().c_str());
         Hmine_vs_other->SetStats(0);
 
@@ -368,11 +368,12 @@ private:
             my_histogram.Fill(my_value);
             other_histogram.Fill(other_value);
             if(other_value) {
-                const auto y_value = (other_value - my_value)/other_value;
+                const double y_value = double(other_value - my_value)/other_value;
                 const auto diff = other_value - my_value;
-                if (std::fabs(y_value) >= 0.1 )
-                    std::cout << event_entry_pair.first << ", other - my = " << diff << std::endl;
-                histogram2D.Fill(my_value, y_value);
+                if (std::abs(y_value) >= 0.1 )
+                    std::cout << event_entry_pair.first << ", other = " << other_value << ", my = " << my_value
+                              << ", other - my = " << diff << std::endl;
+                histogram2D.Fill(other_value, y_value);
             }
         }
     }

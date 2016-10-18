@@ -190,10 +190,8 @@ std::istream& operator >>(std::istream& s, SyncPlotEntry& entry)
             entry.x_range = Parse<Range<double>>(range_str);
             n += 2;
             if(n < params.size()) {
-                std::cout << "Parsing condition: " << params.at(n) << std::endl;
                 std::istringstream ss(params.at(n++));
                 ss >> entry.my_condition;
-                std::cout << entry.my_condition;
             }
             if(n < params.size()) {
                 std::istringstream ss(params.at(n++));
