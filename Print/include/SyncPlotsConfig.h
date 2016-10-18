@@ -8,48 +8,11 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <numeric>
 #include <iostream>
 #include <boost/algorithm/string.hpp>
+#include "AnalysisTools/Core/include/EventIdentifier.h"
 #include "AnalysisTools/Core/include/ConfigReader.h"
 #include "AnalysisTools/Core/include/NumericPrimitives.h"
 
 namespace analysis {
-
-struct EventIdentifier {
-    using IdType = unsigned long long;
-
-    IdType runId, lumiBlock, eventId;
-
-    static const EventIdentifier& Undef_event() {
-        static const EventIdentifier undef_event;
-        return undef_event;
-    }
-
-    EventIdentifier() :
-        runId(std::numeric_limits<IdType>::max()), lumiBlock(std::numeric_limits<IdType>::max()),
-        eventId(std::numeric_limits<IdType>::max()) {}
-
-    EventIdentifier(IdType _runId, IdType _lumiBlock, IdType _eventId) :
-        runId(_runId), lumiBlock(_lumiBlock), eventId(_eventId) {}
-
-    bool operator == (const EventIdentifier& other) const { return !(*this != other); }
-
-    bool operator != (const EventIdentifier& other) const
-    {
-        return runId != other.runId || lumiBlock != other.lumiBlock || eventId != other.eventId;
-    }
-
-    bool operator < (const EventIdentifier& other) const
-    {
-        if(runId != other.runId) return runId < other.runId;
-        if(lumiBlock != other.lumiBlock) return lumiBlock < other.lumiBlock;
-        return eventId < other.eventId;
-    }
-};
-
-std::ostream& operator <<(std::ostream& s, const EventIdentifier& event)
-{
-    s << boost::format("(run, lumi, evt) = (%1%, %2%, %3%)") % event.runId % event.lumiBlock % event.eventId;
-    return s;
-}
 
 enum class CondExpr { Less, More, Equal, LessOrEqual, MoreOrEqual };
 ENUM_NAMES(CondExpr) = {

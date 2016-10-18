@@ -371,8 +371,8 @@ private:
                 const double y_value = double(other_value - my_value)/other_value;
                 const auto diff = other_value - my_value;
                 if (std::abs(y_value) >= 0.1 )
-                    std::cout << event_entry_pair.first << ", other = " << other_value << ", my = " << my_value
-                              << ", other - my = " << diff << std::endl;
+                    std::cout << "run:lumi:evt = " << event_entry_pair.first << ", other = " << other_value
+                              << ", my = " << my_value << ", other - my = " << diff << std::endl;
                 histogram2D.Fill(other_value, y_value);
             }
         }
@@ -448,7 +448,7 @@ private:
             }
             if(my_events_only.count(event_entry.first)) {
                 my_events_only_map[event_entry.first] = event_entry.second;
-                std::cout << event_entry.first << std::endl;
+                std::cout << "run:lumi:evt = " << event_entry.first << std::endl;
             }
         }
 
@@ -456,14 +456,9 @@ private:
         for(const auto& event_entry : other_event_to_entry_map) {
             if(other_events_only.count(event_entry.first)){
                 other_events_only_map[event_entry.first] = event_entry.second;
-                std::cout << event_entry.first << std::endl;
+                std::cout << "run:lumi:evt = " << event_entry.first << std::endl;
             }
         }
-
-//        std::cout << "Common events" << std::endl;
-//        for (const auto common_event_entry : common_event_to_entry_pair_map){
-//            std::cout << common_event_entry.first << std::endl;
-//        }
     }
 
     static void EventSetIntersection(const EventSet& first_set, const EventSet& second_set, EventSet& intersection_set)
