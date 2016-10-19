@@ -200,12 +200,14 @@ private:
                   &Print_SyncPlots::FillAllHistograms<Bool_t, Bool_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kBool_t, kChar_t },
                   &Print_SyncPlots::FillAllHistograms<Bool_t, Char_t, MySelector, OtherSelector, Hist, Hist2D> },
+                { { kBool_t, kInt_t },
+                  &Print_SyncPlots::FillAllHistograms<Bool_t, Int_t, MySelector, OtherSelector, Hist, Hist2D> },
             };
 
             const auto typePair = DataTypePair(myType, otherType);
             if(!fillMethods.count(typePair))
-                throw exception("Unknown branch type combination (%1%, %2%) for branch '%3%'.")
-                    % myType % otherType % mine_var;
+                throw exception("Unknown branch type combination (%1%, %2%) for branch ('%3%', '%4%').")
+                    % myType % otherType % mine_var % other_var;
             FillMethodPtr fillMethod = fillMethods.at(typePair);
             (this->*fillMethod)(mine_var, other_var, my_selector, other_selector, *Hmine_all, *Hother_all,
                        *Hmine_common, *Hother_common, *Hmine_vs_other, *Hmine_diff, *Hother_diff);
