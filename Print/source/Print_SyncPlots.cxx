@@ -188,6 +188,8 @@ private:
                   &Print_SyncPlots::FillAllHistograms<Double_t, Float_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kFloat_t, kDouble_t },
                   &Print_SyncPlots::FillAllHistograms<Float_t, Double_t, MySelector, OtherSelector, Hist, Hist2D> },
+                { { kFloat_t, kUInt_t },
+                  &Print_SyncPlots::FillAllHistograms<Float_t, UInt_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kInt_t, kInt_t },
                   &Print_SyncPlots::FillAllHistograms<Int_t, Int_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kInt_t, kDouble_t },
