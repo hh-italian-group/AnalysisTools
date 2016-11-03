@@ -132,7 +132,8 @@ public:
         histogram->SetFillStyle(1001);
         histogram->SetLineStyle(2);
         histogram->SetFillColor(0);
-        histogram->SetLineColor(kBlue+3);
+		//histogram->SetLineColor(kBlue+3);
+        histogram->SetLineColor(color);
         histogram->SetLineWidth(3);
         //ours
         //histogram->SetLineColor(color);
