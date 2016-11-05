@@ -20,6 +20,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TPad.h>
 #include <Rtypes.h>
 #include <TError.h>
+#include <boost/filesystem.hpp>
 
 #include "AnalysisTools/Run/include/program_main.h"
 #include "../include/SyncPlotsConfig.h"
@@ -34,6 +35,8 @@ struct Arguments {
     REQ_ARG(std::string, group);
     REQ_ARG(std::string, groupRootFile);
     REQ_ARG(std::string, groupTTreeName);
+    OPT_ARG(std::string, myPreSelection, "");
+    OPT_ARG(std::string, groupPreSelection, "");
 };
 
 namespace analysis {
@@ -55,15 +58,23 @@ public:
         std::cout << myGroup << "  " << myRootFile << "  " << myTree << std::endl;
         std::cout << group << "  " << groupRootFile << "  " << groupTree << std::endl;
 
-        Tmine = LoadTree(Fmine, myRootFile, myTree);
-        Tother = LoadTree(Fother, groupRootFile, groupTree);
+        Tmine = LoadTree(Fmine, myRootFile, myTree, args.myPreSelection());
+        Tother = LoadTree(Fother, groupRootFile, groupTree, args.groupPreSelection());
         file_name = "PlotsDiff_" + channel + "_" + sample + "_" + myGroup + "_" + group + ".pdf";
         gErrorIgnoreLevel = kWarning;
     }
 
+    ~Print_SyncPlots()
+    {
+        Tmine = std::shared_ptr<TTree>();
+        Tother = std::shared_ptr<TTree>();
+        Ftmp = std::shared_ptr<TFile>();
+        boost::filesystem::remove(tmpName);
+    }
+
     void Run()
     {
-        CollectEvents(Tmine, Tother);
+        CollectEvents(*Tmine, *Tother);
 
         for(size_t n = 0; n < config.GetEntries().size(); ++n) {
             const SyncPlotEntry& entry = config.GetEntries().at(n);
@@ -78,15 +89,15 @@ public:
             std::vector<double> my_vars_double, other_vars_double;
             if(!entry.my_condition.always_true) {
                 if(entry.my_condition.is_integer)
-                    my_vars_int = CollectValuesEx<int>(Tmine, entry.my_condition.entry);
+                    my_vars_int = CollectValuesEx<int>(*Tmine, entry.my_condition.entry);
                 else
-                    my_vars_double = CollectValuesEx<double>(Tmine, entry.my_condition.entry);
+                    my_vars_double = CollectValuesEx<double>(*Tmine, entry.my_condition.entry);
             }
             if(!entry.other_condition.always_true) {
                 if(entry.other_condition.is_integer)
-                    other_vars_int = CollectValuesEx<int>(Tother, entry.other_condition.entry);
+                    other_vars_int = CollectValuesEx<int>(*Tother, entry.other_condition.entry);
                 else
-                    other_vars_double = CollectValuesEx<double>(Tother, entry.other_condition.entry);
+                    other_vars_double = CollectValuesEx<double>(*Tother, entry.other_condition.entry);
             }
 
             std::ostringstream selection_label;
@@ -112,12 +123,19 @@ public:
     }
 
 private:
-    static TTree* LoadTree(std::shared_ptr<TFile>& file, const std::string& fileName, const std::string& treeName)
+    std::shared_ptr<TTree> LoadTree(std::shared_ptr<TFile>& file, const std::string& fileName,
+                           const std::string& treeName, const std::string& preSelection)
     {
         file = std::shared_ptr<TFile>(new TFile(fileName.c_str(), "READ"));
-        TTree* tree = (TTree*)file->Get(treeName.c_str());
+        std::shared_ptr<TTree> tree((TTree*)file->Get(treeName.c_str()));
         if(!tree)
             throw exception("File '%1%' is empty.") % fileName;
+        if(!Ftmp) {
+            tmpName = boost::filesystem::unique_path("%%%%-%%%%.root").native();
+            Ftmp = std::shared_ptr<TFile>(new TFile(tmpName.c_str(), "RECREATE"));
+        }
+        Ftmp->cd();
+        tree = std::shared_ptr<TTree>(tree->CopyTree(preSelection.c_str()));
         tree->SetBranchStatus("*", 0);
         return tree;
     }
@@ -344,8 +362,8 @@ private:
                            Histogram& Hmine_common, Histogram& Hother_common, Histogram2D& Hmine_vs_other,
                            Histogram& Hmine_diff, Histogram& Hother_diff)
     {
-        const std::vector<MyVarType> my_values = CollectValues<MyVarType>(Tmine, mine_var);
-        const std::vector<OtherVarType> other_values = CollectValues<OtherVarType>(Tother, other_var);
+        const std::vector<MyVarType> my_values = CollectValues<MyVarType>(*Tmine, mine_var);
+        const std::vector<OtherVarType> other_values = CollectValues<OtherVarType>(*Tother, other_var);
         FillCommonHistograms(mine_var, my_values, other_values, my_selector, other_selector,
                              Hmine_common, Hother_common, Hmine_vs_other);
         FillInclusiveHistogram(my_values, my_selector, Hmine_all);
@@ -423,7 +441,7 @@ private:
         }
     }
 
-    void CollectEvents(TTree* my_tree, TTree* other_tree)
+    void CollectEvents(TTree& my_tree, TTree& other_tree)
     {
         my_events = CollectEventIds(my_tree, config.GetMyIdBranches());
         const EventSet my_events_set(my_events.begin(), my_events.end());
@@ -496,15 +514,15 @@ private:
     }
 
     template<typename VarType>
-    std::vector<VarType> CollectValues(TTree* tree, const std::string& name)
+    std::vector<VarType> CollectValues(TTree& tree, const std::string& name)
     {
         EnableBranch(tree, name, true);
         std::vector<VarType> result;
         VarType value;
-        tree->SetBranchAddress(name.c_str(), &value);
-        const Long64_t N = tree->GetEntries();
+        tree.SetBranchAddress(name.c_str(), &value);
+        const Long64_t N = tree.GetEntries();
         for(Long64_t n = 0; n < N;++n) {
-            if(tree->GetEntry(n) < 0)
+            if(tree.GetEntry(n) < 0)
                 throw exception("error while reading tree.");
             result.push_back(value);
         }
@@ -513,11 +531,11 @@ private:
     }
 
     template<typename VarType>
-    std::vector<VarType> CollectValuesEx(TTree* tree, const std::string& name)
+    std::vector<VarType> CollectValuesEx(TTree& tree, const std::string& name)
     {
         std::vector<VarType> result;
 
-        using CollectMethodPtr = void (Print_SyncPlots::*)(TTree*, const std::string&, std::vector<VarType>&);
+        using CollectMethodPtr = void (Print_SyncPlots::*)(TTree&, const std::string&, std::vector<VarType>&);
         using CollectMethodMap = std::map<EDataType, CollectMethodPtr>;
 
         static const CollectMethodMap collectMethods = {
@@ -530,7 +548,7 @@ private:
             { kBool_t, &Print_SyncPlots::CollectAndConvertValue<Bool_t, VarType> }
         };
 
-        TBranch* branch = tree->GetBranch(name.c_str());
+        TBranch* branch = tree.GetBranch(name.c_str());
         if (!branch)
             throw exception("Branch '%1%' not found.") % name;
         TClass *branch_class;
@@ -548,14 +566,14 @@ private:
     }
 
     template<typename InputType, typename OutputType>
-    void CollectAndConvertValue(TTree* tree, const std::string& name, std::vector<OutputType>& result)
+    void CollectAndConvertValue(TTree& tree, const std::string& name, std::vector<OutputType>& result)
     {
         const auto original_result = CollectValues<InputType>(tree, name);
         result.resize(original_result.size());
         std::copy(original_result.begin(), original_result.end(), result.begin());
     }
 
-    EventVector CollectEventIds(TTree* tree, const std::vector<std::string>& idBranches)
+    EventVector CollectEventIds(TTree& tree, const std::vector<std::string>& idBranches)
     {
         using IdType = EventIdentifier::IdType;
         const auto run = CollectValuesEx<IdType>(tree, idBranches.at(0));
@@ -568,10 +586,10 @@ private:
         return events;
     }
 
-    void EnableBranch(TTree* tree, const std::string& name, bool enable)
+    void EnableBranch(TTree& tree, const std::string& name, bool enable)
     {
         UInt_t n_found = 0;
-        tree->SetBranchStatus(name.c_str(), enable, &n_found);
+        tree.SetBranchStatus(name.c_str(), enable, &n_found);
         if(n_found != 1)
             throw exception("Branch '%1%' is not found.") % name;
     }
@@ -592,8 +610,9 @@ private:
 private:
     SyncPlotConfig config;
     std::string channel, sample, myGroup, myRootFile, myTree, group, groupRootFile, groupTree;
-    std::shared_ptr<TFile> Fmine, Fother;
-    TTree *Tmine, *Tother;
+    std::shared_ptr<TFile> Fmine, Fother, Ftmp;
+    std::shared_ptr<TTree> Tmine, Tother;
+    std::string tmpName;
 
     EventVector my_events, other_events;
     EventToEntryMap my_events_only_map, other_events_only_map;
