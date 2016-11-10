@@ -210,6 +210,10 @@ private:
                   &Print_SyncPlots::FillAllHistograms<Float_t, UInt_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kInt_t, kInt_t },
                   &Print_SyncPlots::FillAllHistograms<Int_t, Int_t, MySelector, OtherSelector, Hist, Hist2D> },
+                { { kInt_t, kUInt_t },
+                  &Print_SyncPlots::FillAllHistograms<Int_t, UInt_t, MySelector, OtherSelector, Hist, Hist2D> },
+                { { kUInt_t, kInt_t },
+                  &Print_SyncPlots::FillAllHistograms<UInt_t, Int_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kInt_t, kDouble_t },
                   &Print_SyncPlots::FillAllHistograms<Int_t, Double_t, MySelector, OtherSelector, Hist, Hist2D> },
                 { { kDouble_t, kInt_t },
@@ -392,7 +396,7 @@ private:
             if(other_value) {
                 const double y_value = double(other_value - my_value)/other_value;
                 const auto diff = other_value - my_value;
-                if (std::abs(y_value) >= 0.1 )
+                if (std::abs(y_value) >= 0.001 )
                     std::cout << "run:lumi:evt = " << event_entry_pair.first << ", other = " << other_value
                               << ", my = " << my_value << ", other - my = " << diff << std::endl;
                 histogram2D.Fill(other_value, y_value);
