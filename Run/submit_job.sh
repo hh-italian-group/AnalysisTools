@@ -61,7 +61,7 @@ EOF
 echo "$SCRIPT" > "$SCRIPT_NAME"
 chmod u+x "$SCRIPT_NAME"
 
-echo "Job submission at \$(date)." > $LOG_NAME
+echo "Job submission at $(date)." > $LOG_NAME
 if [ $SITE = "Pisa" ] ; then
     bsub -q "$QUEUE" -E "/usr/local/lsf/work/infn-pisa/scripts/testq-preexec-cms.bash" -J "$JOB_NAME" \
          "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
