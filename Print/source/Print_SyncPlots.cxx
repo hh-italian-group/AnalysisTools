@@ -37,7 +37,31 @@ struct Arguments {
     REQ_ARG(std::string, groupTTreeName);
     OPT_ARG(std::string, myPreSelection, "");
     OPT_ARG(std::string, groupPreSelection, "");
+    OPT_ARG(double, badThreshold, 0.01);
 };
+
+namespace{
+  template<typename T>
+  bool isBadEvent(T first, T second, double badThreshold) {
+     if(first == second) return false;
+     if(first == 0 || second == 0) return true;
+     const auto delta = first - second;
+     return std::abs(delta/second) >= badThreshold;
+  }
+  template<>
+  bool isBadEvent<int>(int first, int second, double badThreshold) {
+     return first != second;
+  }
+  
+  template<>
+  bool isBadEvent<unsigned int>(unsigned int first, unsigned int second, double badThreshold) {
+     return first != second;
+  }
+  template<>
+  bool isBadEvent<bool>(bool first, bool second, double badThreshold) {
+     return first != second;
+  }
+}
 
 namespace analysis {
 class Print_SyncPlots {
@@ -48,8 +72,8 @@ public:
     using EntryPair = std::pair<size_t, size_t>;
     using EventToEntryPairMap = std::map<EventIdentifier, EntryPair>;
 
-    Print_SyncPlots(const Arguments& args)
-        : config(args.configFile()), channel(args.channelName()), sample(args.sampleName()), myGroup(args.myGroup()),
+    Print_SyncPlots(const Arguments& _args)
+        : args(_args),config(args.configFile()), channel(args.channelName()), sample(args.sampleName()), myGroup(args.myGroup()),
           myRootFile(args.myRootFile()), myTree(args.myTTreeName()),
           group(args.group()), groupRootFile(args.groupRootFile()), groupTree(args.groupTTreeName()),
           isFirstPage(true), isLastDraw(false)
@@ -393,15 +417,14 @@ private:
             const OtherVarType& other_value = other_values.at(other_entry);
             my_histogram.Fill(my_value);
             other_histogram.Fill(other_value);
-            if(other_value) {
-                const double y_value = double(other_value - my_value)/other_value;
-                const auto diff = other_value - my_value;
-                if (std::abs(y_value) >= 0.001 )
-                    std::cout << "run:lumi:evt = " << event_entry_pair.first << ", other = " << other_value
-                              << ", my = " << my_value << ", other - my = " << diff << std::endl;
-                histogram2D.Fill(other_value, y_value);
-            }
-        }
+	    const double y_value = other_value ? double(other_value - my_value)/other_value : -my_value;
+	    const auto diff = other_value - my_value;
+	    if (isBadEvent<MyVarType>(my_value, other_value, args.badThreshold()))
+		std::cout << "run:lumi:evt = " << event_entry_pair.first << ", other = " << other_value
+		    << ", my = " << my_value << ", other - my = " << diff << std::endl;
+	    histogram2D.Fill(other_value, y_value);
+
+	}
     }
 
     template<typename VarType, typename Histogram, typename Selector>
@@ -612,6 +635,7 @@ private:
     }
 
 private:
+    Arguments args; 
     SyncPlotConfig config;
     std::string channel, sample, myGroup, myRootFile, myTree, group, groupRootFile, groupTree;
     std::shared_ptr<TFile> Fmine, Fother, Ftmp;
