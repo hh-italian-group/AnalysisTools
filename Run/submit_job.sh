@@ -29,10 +29,14 @@ if [ ! -d "$OUTPUT_PATH" ] ; then
     exit 1
 fi
 cd "$OUTPUT_PATH"
+OUTPUT_PATH="$(pwd)"
 
-if [ -d "/gpfs" ] ; then SITE="Pisa" ; else SITE="CERN" ; fi
+if [ -d "/gpfs/ddn" ] ; then SITE="Pisa"
+elif [ -d "/lustre" ] ;  then SITE="Bari"
+elif [ -d "/gwpool" ] ;  then SITE="Milan"
+else SITE="CERN" ; fi
 
-if [ $SITE = "Pisa" ] ; then
+if [ $SITE = "Pisa" -o $SITE = "Bari" -o $SITE = "Milan" ] ; then
     SOURCE_LINE="source /cvmfs/cms.cern.ch/cmsset_default.sh"
 else
     SOURCE_LINE=
@@ -65,6 +69,9 @@ echo "Job submission at $(date)." > $LOG_NAME
 if [ $SITE = "Pisa" ] ; then
     bsub -q "$QUEUE" -E "/usr/local/lsf/work/infn-pisa/scripts/testq-preexec-cms.bash" -J "$JOB_NAME" \
          "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
+elif [ $SITE = "Bari" -o $SITE = "Milan" ] ; then
+    qsub -q "$QUEUE" -N "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 else
     bsub -q "$QUEUE" -J "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 fi
+
