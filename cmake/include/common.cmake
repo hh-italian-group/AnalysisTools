@@ -1,7 +1,7 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${AnalysisTools_DIR}/cmake/modules")
 
 find_package(ROOT REQUIRED COMPONENTS Core Hist RIO Tree Physics Graf Gpad Matrix MathCore GenVector TMVA)
-find_package(BoostEx REQUIRED COMPONENTS program_options filesystem regex system)
+find_package(BoostEx REQUIRED COMPONENTS program_options filesystem regex system thread)
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${ROOT_INCLUDE_DIR})
 set(ALL_LIBS ${Boost_LIBRARIES} ${ROOT_LIBRARIES} pthread)
 
