@@ -46,7 +46,7 @@ public:
     {
         if(!GlobalPull())
             throw std::runtime_error("Global thread pull not defined.");
-        return GlobalPull()->run(f, args...);
+        return GlobalPull()->run(f, std::forward<Args>(args)...);
     }
 
 private:
@@ -61,7 +61,7 @@ template< class Function, class... Args>
 std::future<std::result_of_t<std::decay_t<Function>(std::decay_t<Args>...)>>
     async(Function&& f, Args&&... args)
 {
-    return ThreadPull::run_global(f, args...);
+    return ThreadPull::run_global(f, std::forward<Args>(args)...);
 }
 
 } // namespace run
