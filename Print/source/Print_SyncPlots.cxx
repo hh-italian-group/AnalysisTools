@@ -24,6 +24,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #include "AnalysisTools/Run/include/program_main.h"
 #include "../include/SyncPlotsConfig.h"
+#include "RootExt.h"
 
 struct Arguments {
     REQ_ARG(std::string, configFile);
@@ -46,19 +47,19 @@ namespace{
      if(first == second) return false;
      if(first == 0 || second == 0) return true;
      const auto delta = first - second;
-     return std::abs(delta/second) >= badThreshold;
+     return std::abs<T>(delta/second) >= badThreshold;
   }
   template<>
-  bool isBadEvent<int>(int first, int second, double badThreshold) {
+  bool isBadEvent<int>(int first, int second, double /*badThreshold*/) {
      return first != second;
   }
   
   template<>
-  bool isBadEvent<unsigned int>(unsigned int first, unsigned int second, double badThreshold) {
+  bool isBadEvent<unsigned int>(unsigned int first, unsigned int second, double /*badThreshold*/) {
      return first != second;
   }
   template<>
-  bool isBadEvent<bool>(bool first, bool second, double badThreshold) {
+  bool isBadEvent<bool>(bool first, bool second, double /*badThreshold*/) {
      return first != second;
   }
 }
@@ -151,7 +152,7 @@ private:
                            const std::string& treeName, const std::string& preSelection)
     {
         file = std::shared_ptr<TFile>(new TFile(fileName.c_str(), "READ"));
-        std::shared_ptr<TTree> tree((TTree*)file->Get(treeName.c_str()));
+        std::shared_ptr<TTree> tree(root_ext::ReadObject<TTree>(*file, treeName));
         if(!tree)
             throw exception("File '%1%' is empty.") % fileName;
         if(!Ftmp) {
@@ -164,14 +165,14 @@ private:
         return tree;
     }
 
-    void drawHistos(const std::string& mine_var, const std::string& other_var, int nbins, double xmin, double xmax)
+    void drawHistos(const std::string& mine_var, const std::string& other_var, size_t nbins, double xmin, double xmax)
     {
         const auto SelectAll = [](size_t) -> bool { return true; };
         drawHistos(mine_var, other_var, nbins, xmin, xmax, SelectAll, SelectAll, "");
     }
 
     template<typename MySelector, typename OtherSelector>
-    void drawHistos(const std::string& mine_var, const std::string& other_var, int nbins, double xmin, double xmax,
+    void drawHistos(const std::string& mine_var, const std::string& other_var, size_t nbins, double xmin, double xmax,
                     const MySelector& my_selector, const OtherSelector& other_selector,
                     const std::string& selection_label)
     {
@@ -187,7 +188,7 @@ private:
             using FillMethodMap = std::map<DataTypePair, FillMethodPtr>;
 
             const auto createHist = [&](const std::string& name) -> HistPtr {
-                return HistPtr(new Hist(name.c_str(), "", nbins, xmin, xmax));
+                return HistPtr(new Hist(name.c_str(), "", static_cast<int>(nbins), xmin, xmax));
             };
             const auto createMineHist = [&](const std::string& suffix) -> HistPtr {
                 return createHist("Hmine" + mine_var + suffix);
@@ -196,7 +197,7 @@ private:
                 return createHist("Hother" + mine_var + suffix);
             };
             const auto create2DHist = [&](const std::string& name) -> Hist2DPtr {
-                return Hist2DPtr(new Hist2D(name.c_str(), "", nbins, xmin, xmax, 61, -1.525, 1.525));
+                return Hist2DPtr(new Hist2D(name.c_str(), "", static_cast<int>(nbins), xmin, xmax, 61, -1.525, 1.525));
             };
 
             auto Hmine_all = createMineHist("all");
@@ -313,26 +314,27 @@ private:
             Hmine->GetYaxis()->SetRangeUser(0,Hother->GetMaximum()*1.1);
         Hmine->Draw("hist");
         Hother->Draw("histsame");
-        DrawTextLabels(Hmine->Integral(0,Hmine->GetNbinsX()+1), Hother->Integral(0,Hother->GetNbinsX()+1));
+        DrawTextLabels(static_cast<size_t>(Hmine->Integral(0,Hmine->GetNbinsX()+1)),
+                       static_cast<size_t>(Hother->Integral(0,Hother->GetNbinsX()+1)));
 
         pad2.cd();
 
         // Draw the ratio of the historgrams
-        std::unique_ptr<TH1F> HDiff((TH1F*)Hother->Clone("HDiff"));
+        std::unique_ptr<TH1F> HDiff(dynamic_cast<TH1F*>(Hother->Clone("HDiff")));
         HDiff->Divide(Hmine.get());
         ///HDiff->GetYaxis()->SetRangeUser(0.9,1.1);
         HDiff->GetYaxis()->SetRangeUser(0.9,1.1);
         //HDiff->GetYaxis()->SetRangeUser(0.98,1.02);
         //HDiff->GetYaxis()->SetRangeUser(0.,2.0);
         HDiff->GetYaxis()->SetNdivisions(3);
-        HDiff->GetYaxis()->SetLabelSize(0.1);
-        HDiff->GetYaxis()->SetTitleSize(0.1);
+        HDiff->GetYaxis()->SetLabelSize(0.1f);
+        HDiff->GetYaxis()->SetTitleSize(0.1f);
         HDiff->GetYaxis()->SetTitleOffset(0.5);
         //HDiff->GetYaxis()->SetTitle(myGroup + " / " + group);
         HDiff->GetYaxis()->SetTitle("Ratio");
         HDiff->GetXaxis()->SetNdivisions(-1);
         HDiff->GetXaxis()->SetTitle("");
-        HDiff->GetXaxis()->SetLabelSize(0.0001);
+        HDiff->GetXaxis()->SetLabelSize(0.0001f);
         HDiff->SetMarkerStyle(7);
         HDiff->SetMarkerColor(2);
         HDiff->Draw("histp");
@@ -362,8 +364,8 @@ private:
         TPad pad1("pad1","", 0, 0, 1, 1);
         pad1.cd();
         Hmine_vs_other->Draw("colz");
-        const size_t n_events = Hmine_vs_other->Integral(0, Hmine_vs_other->GetNbinsX() + 1,
-                                                         0, Hmine_vs_other->GetNbinsY() + 1);
+        const size_t n_events = static_cast<size_t>(Hmine_vs_other->Integral(0, Hmine_vs_other->GetNbinsX() + 1,
+                                                                             0, Hmine_vs_other->GetNbinsY() + 1));
         DrawTextLabels(n_events, n_events);
         canvas.Clear();
         pad1.Draw();
@@ -374,10 +376,10 @@ private:
     {
         TText TXmine;
         TXmine.SetTextColor(1);
-        TXmine.SetTextSize(.04);
+        TXmine.SetTextSize(.04f);
         TText TXother;
         TXother.SetTextColor(2);
-        TXother.SetTextSize(.04);
+        TXother.SetTextSize(.04f);
 
         TXmine.DrawTextNDC(.23,.84,myGroup+" : " + n_events_mine);
         TXother.DrawTextNDC(.53,.84,group+": " + n_events_other);
@@ -417,9 +419,10 @@ private:
             const OtherVarType& other_value = other_values.at(other_entry);
             my_histogram.Fill(my_value);
             other_histogram.Fill(other_value);
-	    const double y_value = other_value ? double(other_value - my_value)/other_value : -my_value;
-	    const auto diff = other_value - my_value;
-	    if (isBadEvent<MyVarType>(my_value, other_value, args.badThreshold()))
+        const double y_value = other_value != OtherVarType(0)
+                             ? double(static_cast<MyVarType>(other_value) - my_value)/other_value : -my_value;
+        const auto diff = static_cast<MyVarType>(other_value) - my_value;
+        if (isBadEvent<MyVarType>(my_value, static_cast<MyVarType>(other_value), args.badThreshold()))
 		std::cout << "run:lumi:evt = " << event_entry_pair.first << ", other = " << other_value
 		    << ", my = " << my_value << ", other - my = " << diff << std::endl;
 	    histogram2D.Fill(other_value, y_value);
@@ -517,7 +520,7 @@ private:
         const auto iter = std::set_intersection(first_set.begin(), first_set.end(),
                                                 second_set.begin(), second_set.end(),
                                                 intersection_vector.begin());
-        intersection_vector.resize(iter - intersection_vector.begin());
+        intersection_vector.resize(static_cast<size_t>(iter - intersection_vector.begin()));
         intersection_set.clear();
         intersection_set.insert(intersection_vector.begin(), intersection_vector.end());
     }
@@ -528,7 +531,7 @@ private:
         const auto iter = std::set_difference(first_set.begin(), first_set.end(),
                                               second_set.begin(), second_set.end(),
                                               diff_vector.begin());
-        diff_vector.resize(iter - diff_vector.begin());
+        diff_vector.resize(static_cast<size_t>(iter - diff_vector.begin()));
         diff_set.clear();
         diff_set.insert(diff_vector.begin(), diff_vector.end());
     }

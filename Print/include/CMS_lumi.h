@@ -11,33 +11,34 @@ namespace cms_tdr {
 //
 // Global variables
 //
-
+namespace {
 TString cmsText     = "CMS";
-float cmsTextFont   = 61;  // default is helvetic-bold
+Font_t cmsTextFont   = 61;  // default is helvetic-bold
 
 bool writeExtraText = false;
 TString extraText   = "Preliminary";
-float extraTextFont = 52;  // default is helvetica-italics
+Font_t extraTextFont = 52;  // default is helvetica-italics
 
 // text sizes and text offsets with respect to the top frame
 // in unit of the top margin size
-float lumiTextSize     = 0.6;
-float lumiTextOffset   = 0.2;
-float cmsTextSize      = 0.75;
-float cmsTextOffset    = 0.1;  // only used in outOfFrame version
+float lumiTextSize     = 0.6f;
+float lumiTextOffset   = 0.2f;
+float cmsTextSize      = 0.75f;
+float cmsTextOffset    = 0.1f;  // only used in outOfFrame version
 
-float relPosX    = 0.045;
-float relPosY    = 0.035;
-float relExtraDY = 1.2;
+float relPosX    = 0.045f;
+float relPosY    = 0.035f;
+float relExtraDY = 1.2f;
 
 // ratio of "CMS" and extra text size
-float extraOverCmsTextSize  = 0.76;
+float extraOverCmsTextSize  = 0.76f;
 
 TString lumi_13TeV = "2.8 fb^{-1}";
 TString lumi_8TeV  = "19.7 fb^{-1}";
 TString lumi_7TeV  = "5.1 fb^{-1}";
 
 bool drawLogo      = false;
+}
 
 //void CMS_lumi( TPad* pad, int iPeriod=3, int iPosX=10 );
 
@@ -49,16 +50,16 @@ CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
     {
       outOfFrame = true;
     }
-  int alignY_=3;
-  int alignX_=2;
+  Short_t alignY_=3;
+  Short_t alignX_=2;
   if( iPosX/10==0 ) alignX_=1;
   if( iPosX==0    ) alignX_=1;
   if( iPosX==0    ) alignY_=1;
   if( iPosX/10==1 ) alignX_=1;
   if( iPosX/10==2 ) alignX_=2;
   if( iPosX/10==3 ) alignX_=3;
-  if( iPosX == 0  ) relPosX = 0.12;
-  int align_ = 10*alignX_ + alignY_;
+  if( iPosX == 0  ) relPosX = 0.12f;
+  Short_t align_ = 10*alignX_ + alignY_;
 
 //  float H = pad->GetWh();
 //  float W = pad->GetWw();
@@ -136,7 +137,7 @@ CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
 
   pad->cd();
 
-  float posX_=0;
+  double posX_=0;
   if( iPosX%10<=1 )
     {
       posX_ =   l + relPosX*(1-l-r);
@@ -149,7 +150,7 @@ CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
     {
       posX_ =  1-r - relPosX*(1-l-r);
     }
-  float posY_ = 1-t - relPosY*(1-t-b);
+  double posY_ = 1-t - relPosY*(1-t-b);
   if( !outOfFrame )
     {
       if( drawLogo )

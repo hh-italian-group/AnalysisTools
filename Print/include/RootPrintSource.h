@@ -147,7 +147,7 @@ public:
     using PlotOptions = typename root_ext::HistogramPlotter<Histogram, ValueType>::Options;
     using Entry = typename root_ext::HistogramPlotter<Histogram, ValueType>::Entry;
 
-    static PlotOptions& GetDefaultPlotOptions(unsigned n)
+    static PlotOptions& GetDefaultPlotOptions(size_t n)
     {
         static std::vector<PlotOptions> options;
         if(!options.size())

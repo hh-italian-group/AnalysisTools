@@ -24,12 +24,12 @@ static const std::map<std::string, EColor> colorMapName = {{"white",kWhite}, {"b
                                                            {"yellow",kYellow}, {"magenta",kMagenta}, {"cyan",kCyan},
                                                            {"orange",kOrange}, {"spring",kSpring}, {"teal",kTeal},
                                                            {"azure",kAzure},
-                                                           {"azure_custom",(EColor)TColor::GetColor(100,182,232)},
+                                                           {"azure_custom", static_cast<EColor>(TColor::GetColor(100,182,232))},
                                                            {"violet",kViolet},{"pink",kPink},
-                                                           {"pink_custom", (EColor) TColor::GetColor(250,202,255)},
-                                                           {"red_custom", (EColor) TColor::GetColor(222,90,106)},
-                                                           {"violet_custom", (EColor) TColor::GetColor(155,152,204)},
-                                                           {"yellow_custom", (EColor) TColor::GetColor(248,206,104)}};
+                                                           {"pink_custom", static_cast<EColor>(TColor::GetColor(250,202,255))},
+                                                           {"red_custom", static_cast<EColor>(TColor::GetColor(222,90,106))},
+                                                           {"violet_custom", static_cast<EColor>(TColor::GetColor(155,152,204))},
+                                                           {"yellow_custom", static_cast<EColor>(TColor::GetColor(248,206,104))}};
 
 int CreateTransparentColor(int color, float alpha)
 {
@@ -53,7 +53,7 @@ public:
     static ValueType FindMinLimitX(const Histogram& h)
     {
         for(Int_t i = 0; i < h.GetNbinsX(); ++i) {
-            if(h.GetBinContent(i))
+            if(h.GetBinContent(i) != ValueType(0))
                 return h.GetBinLowEdge(i);
         }
         return std::numeric_limits<ValueType>::max();
@@ -62,7 +62,7 @@ public:
     static ValueType FindMaxLimitX(const Histogram& h)
     {
         for(Int_t i = h.GetNbinsX() - 1; i > 0; --i) {
-            if(h.GetBinContent(i))
+            if(h.GetBinContent(i) != ValueType(0))
                 return h.GetBinLowEdge(i) + h.GetBinWidth(i);
         }
         return std::numeric_limits<ValueType>::lowest();
@@ -72,7 +72,7 @@ public:
     {
         ValueType min = std::numeric_limits<ValueType>::max();
         for(Int_t i = 0; i <= h.GetNbinsX() + 1; ++i) {
-            if(h.GetBinContent(i))
+            if(h.GetBinContent(i) != ValueType(0))
                 min = std::min(min, h.GetBinContent(i));
         }
         return min;
@@ -82,7 +82,7 @@ public:
     {
         ValueType max = std::numeric_limits<ValueType>::lowest();
         for(Int_t i = 0; i <= h.GetNbinsX() + 1; ++i) {
-            if(h.GetBinContent(i))
+            if(h.GetBinContent(i) != ValueType(0))
                 max = std::max(max, h.GetBinContent(i));
         }
         return max;
@@ -240,7 +240,7 @@ public:
             if(!stat_pad)
                 continue;
             stat_pad->cd();
-            TPaveStats *pave_stats = (TPaveStats*)h->GetListOfFunctions()->FindObject("stats");
+            TPaveStats *pave_stats = dynamic_cast<TPaveStats*>(h->GetListOfFunctions()->FindObject("stats"));
 
             TPaveStats *pave_stats_copy = root_ext::CloneObject(*pave_stats);
             h->SetStats(0);
@@ -251,7 +251,7 @@ public:
             pave_stats_copy->SetY2NDC(o.pave_stats_box.right_top.y);
             pave_stats_copy->ResetAttText();
             pave_stats_copy->SetTextColor(o.color);
-            pave_stats_copy->SetTextSize(o.pave_stats_text_size);
+            pave_stats_copy->SetTextSize(static_cast<float>(o.pave_stats_text_size));
             pave_stats_copy->Draw();
             stat_pad->Update();
         }

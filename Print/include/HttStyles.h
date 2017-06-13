@@ -46,10 +46,10 @@ void SetStyle()
   HttStyle->SetPadColor       (0);
   HttStyle->SetPadBorderSize  (10);
   HttStyle->SetPadBorderMode  (0);
-  HttStyle->SetPadBottomMargin(0.13);
-  HttStyle->SetPadTopMargin   (0.08);
-  HttStyle->SetPadLeftMargin  (0.15);
-  HttStyle->SetPadRightMargin (0.05);
+  HttStyle->SetPadBottomMargin(0.13f);
+  HttStyle->SetPadTopMargin   (0.08f);
+  HttStyle->SetPadLeftMargin  (0.15f);
+  HttStyle->SetPadRightMargin (0.05f);
   HttStyle->SetPadGridX       (0);
   HttStyle->SetPadGridY       (0);
   HttStyle->SetPadTickX       (1);
@@ -81,28 +81,28 @@ void SetStyle()
   // Various
   HttStyle->SetMarkerStyle(20);
   HttStyle->SetMarkerColor(kBlack);
-  HttStyle->SetMarkerSize (1.1);
+  HttStyle->SetMarkerSize (1.1f);
 
   HttStyle->SetTitleBorderSize(0);
   HttStyle->SetTitleFillColor (0);
-  HttStyle->SetTitleX         (0.2);
+  HttStyle->SetTitleX         (0.2f);
 
-  HttStyle->SetTitleSize  (0.055,"X");
-  HttStyle->SetTitleOffset(1.200,"X");
-  HttStyle->SetLabelOffset(0.005,"X");
-  HttStyle->SetLabelSize  (0.040,"X");
+  HttStyle->SetTitleSize  (0.055f,"X");
+  HttStyle->SetTitleOffset(1.200f,"X");
+  HttStyle->SetLabelOffset(0.005f,"X");
+  HttStyle->SetLabelSize  (0.040f,"X");
   HttStyle->SetLabelFont  (42   ,"X");
 
   HttStyle->SetStripDecimals(kFALSE);
   HttStyle->SetLineStyleString(11,"20 10");
 
-  HttStyle->SetTitleSize  (0.055,"Y");
-  HttStyle->SetTitleOffset(1.600,"Y");
-  HttStyle->SetLabelOffset(0.010,"Y");
-  HttStyle->SetLabelSize  (0.040,"Y");
+  HttStyle->SetTitleSize  (0.055f,"Y");
+  HttStyle->SetTitleOffset(1.600f,"Y");
+  HttStyle->SetLabelOffset(0.010f,"Y");
+  HttStyle->SetLabelSize  (0.040f,"Y");
   HttStyle->SetLabelFont  (42   ,"Y");
 
-  HttStyle->SetTextSize   (0.055);
+  HttStyle->SetTextSize   (0.055f);
   HttStyle->SetTextFont   (42);
 
   HttStyle->SetStatFont   (42);
@@ -123,10 +123,10 @@ TCanvas* MakeCanvas(const char* name, const char *title, int dX, int dY)
   canvas->SetBorderMode     (0);
   canvas->SetBorderSize     (10);
   // Set margins to reasonable defaults
-  canvas->SetLeftMargin     (0.18);
-  canvas->SetRightMargin    (0.05);
-  canvas->SetTopMargin      (0.08);
-  canvas->SetBottomMargin   (0.15);
+  canvas->SetLeftMargin     (0.18f);
+  canvas->SetRightMargin    (0.05f);
+  canvas->SetTopMargin      (0.08f);
+  canvas->SetBottomMargin   (0.15f);
   // Setup a frame which makes sense
   canvas->SetFrameFillStyle (0);
   canvas->SetFrameLineStyle (0);
@@ -143,11 +143,11 @@ TCanvas* MakeCanvas(const char* name, const char *title, int dX, int dY)
 void InitSubPad(TPad* pad, int i)
 {
   pad->cd(i);
-  TPad *tmpPad = (TPad*) pad->GetPad(i);
-  tmpPad->SetLeftMargin  (0.18);
-  tmpPad->SetTopMargin   (0.05);
-  tmpPad->SetRightMargin (0.07);
-  tmpPad->SetBottomMargin(0.15);
+  TPad *tmpPad = dynamic_cast<TPad*>(pad->GetPad(i));
+  tmpPad->SetLeftMargin  (0.18f);
+  tmpPad->SetTopMargin   (0.05f);
+  tmpPad->SetRightMargin (0.07f);
+  tmpPad->SetBottomMargin(0.15f);
   return;
 }
 
@@ -160,7 +160,7 @@ void InitSignal(TH1 *hist)
   //hist->SetLineColor(kBlue+3);
 }
 
-void InitHist(TH1 *hist, const char *xtit, const char *ytit, int color, int style)
+void InitHist(TH1 *hist, const char *xtit, const char *ytit, Color_t color, Style_t style)
 {
   hist->SetXTitle(xtit);
   hist->SetYTitle(ytit);
@@ -168,19 +168,19 @@ void InitHist(TH1 *hist, const char *xtit, const char *ytit, int color, int styl
   hist->SetLineWidth(    3.);
   hist->SetFillColor(color );
   hist->SetFillStyle(style );
-  hist->SetTitleSize  (0.055,"Y");
-  hist->SetTitleOffset(1.600,"Y");
-  hist->SetLabelOffset(0.014,"Y");
-  hist->SetLabelSize  (0.040,"Y");
+  hist->SetTitleSize  (0.055f,"Y");
+  hist->SetTitleOffset(1.600f,"Y");
+  hist->SetLabelOffset(0.014f,"Y");
+  hist->SetLabelSize  (0.040f,"Y");
   hist->SetLabelFont  (42   ,"Y");
-  hist->SetTitleSize  (0.055,"X");
-  hist->SetTitleOffset(1.300,"X");
-  hist->SetLabelOffset(0.014,"X");
-  hist->SetLabelSize  (0.040,"X");
+  hist->SetTitleSize  (0.055f,"X");
+  hist->SetTitleOffset(1.300f,"X");
+  hist->SetLabelOffset(0.014f,"X");
+  hist->SetLabelSize  (0.040f,"X");
   hist->SetLabelFont  (42   ,"X");
   hist->SetMarkerStyle(20);
   hist->SetMarkerColor(color);
-  hist->SetMarkerSize (0.6);
+  hist->SetMarkerSize (0.6f);
   hist->GetYaxis()->SetTitleFont(42);
   hist->GetXaxis()->SetTitleFont(42);
   hist->SetTitle("");
@@ -190,7 +190,7 @@ void InitHist(TH1 *hist, const char *xtit, const char *ytit, int color, int styl
 void InitData(TH1* hist)
 {
   hist->SetMarkerStyle(20.);
-  hist->SetMarkerSize (1.3);
+  hist->SetMarkerSize (1.3f);
   hist->SetLineWidth  ( 3.);
 }
 
@@ -221,7 +221,7 @@ void CMSPrelim(const char* dataset, const char* channel, double lowX, double low
   lumi->SetBorderSize(   0 );
   lumi->SetFillStyle(    0 );
   lumi->SetTextAlign(   12 );
-  lumi->SetTextSize ( 0.035 );
+  lumi->SetTextSize ( 0.035f );
   lumi->SetTextColor(    1 );
   lumi->SetTextFont (   62 );
   lumi->AddText(dataset);
@@ -231,7 +231,7 @@ void CMSPrelim(const char* dataset, const char* channel, double lowX, double low
   chan->SetBorderSize(   0 );
   chan->SetFillStyle(    0 );
   chan->SetTextAlign(   12 );
-  chan->SetTextSize ( 0.04 );
+  chan->SetTextSize ( 0.04f );
   chan->SetTextColor(    1 );
   chan->SetTextFont (   62 );
   chan->AddText(channel);

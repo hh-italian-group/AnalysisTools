@@ -92,6 +92,8 @@ struct ArgumentBase {
     {
         Arguments().push_back(this);
     }
+    ArgumentBase(const ArgumentBase& other) :
+        name(other.name), description(other.description), required(other.required) {}
 
     virtual ~ArgumentBase()
     {

@@ -65,17 +65,17 @@ public:
         }
 
         legend->SetFillColor(0);
-        legend->SetTextSize(0.026);
+        legend->SetTextSize(0.026f);
         legend->SetTextFont(42);
         legend->SetFillStyle (0);
         legend->SetFillColor (0);
         legend->SetBorderSize(0);
 
-        text->SetTextSize(0.035);
+        text->SetTextSize(0.035f);
         text->SetTextFont(62);
         text->SetFillColor(0);
         text->SetBorderSize(0);
-        text->SetMargin(0.01);
+        text->SetMargin(0.01f);
         text->SetTextAlign(12); // align left
         std::ostringstream ss_text;
         ss_text << "H#rightarrowhh#rightarrowbb#tau#tau " ;
@@ -83,11 +83,11 @@ public:
 
 
         //category
-        categoryText->SetTextSize(0.035);
+        categoryText->SetTextSize(0.035f);
         categoryText->SetTextFont(62);
         categoryText->SetFillColor(0);
         categoryText->SetBorderSize(0);
-        categoryText->SetMargin(0.01);
+        categoryText->SetMargin(0.01f);
         categoryText->SetTextAlign(12); // align left
         std::ostringstream ss_text_2;
         ss_text_2 << channelName << ", " << categoryName;
@@ -190,10 +190,10 @@ public:
         int H_ref = 700;
         int W_ref = 700;
 
-        float T = 0.08*H_ref;
-        float B = 0.14*H_ref;
-        float L = 0.18*W_ref;
-        float R = 0.05*W_ref;
+        float T = 0.08f*H_ref;
+        float B = 0.14f*H_ref;
+        float L = 0.18f*W_ref;
+        float R = 0.05f*W_ref;
 
 //        main_pad->SetFillColor(0);
 //        main_pad->SetBorderMode(0);
@@ -254,14 +254,14 @@ public:
                 stack->GetXaxis()->SetTitle(page.side.axis_titleX.c_str());
                 stack->GetXaxis()->SetTitleOffset(1.00); //1.05
 //                stack->GetXaxis()->SetTitleSize(0.055); //0.04
-                stack->GetXaxis()->SetLabelSize(0.04);
-                stack->GetXaxis()->SetLabelOffset(0.015);
+                stack->GetXaxis()->SetLabelSize(0.04f);
+                stack->GetXaxis()->SetLabelOffset(0.015f);
 //                stack->GetXaxis()->SetTitleFont(42); //62
             }
 
 //            stack->GetYaxis()->SetTitleSize(0.055); //0.05
-            stack->GetYaxis()->SetTitleOffset(1.4); //1.45
-            stack->GetYaxis()->SetLabelSize(0.04);
+            stack->GetYaxis()->SetTitleOffset(1.4f); //1.45
+            stack->GetYaxis()->SetLabelSize(0.04f);
             stack->GetYaxis()->SetTitle(page.side.axis_titleY.c_str());
 //            stack->GetYaxis()->SetTitleFont(42); //62
 
@@ -295,7 +295,7 @@ public:
 
 
             data_histogram->SetMarkerStyle(20);
-            data_histogram->SetMarkerSize(1.1);
+            data_histogram->SetMarkerSize(1.1f);
 //            data_histogram->Draw("samepPE0X0");
             data_histogram->Draw("pesame");
         }
@@ -324,18 +324,18 @@ public:
 
             ratio_histogram->GetYaxis()->SetRangeUser(0.5,1.5);
             ratio_histogram->GetYaxis()->SetNdivisions(505);
-            ratio_histogram->GetYaxis()->SetLabelSize(0.11);
-            ratio_histogram->GetYaxis()->SetTitleSize(0.14);
-            ratio_histogram->GetYaxis()->SetTitleOffset(0.55);
+            ratio_histogram->GetYaxis()->SetLabelSize(0.11f);
+            ratio_histogram->GetYaxis()->SetTitleSize(0.14f);
+            ratio_histogram->GetYaxis()->SetTitleOffset(0.55f);
             ratio_histogram->GetYaxis()->SetTitle("Obs/Bkg");
             ratio_histogram->GetYaxis()->SetTitleFont(62);
             ratio_histogram->GetXaxis()->SetNdivisions(510);
             ratio_histogram->GetXaxis()->SetTitle(axis_titleX.c_str());
-            ratio_histogram->GetXaxis()->SetTitleSize(0.1);
-            ratio_histogram->GetXaxis()->SetTitleOffset(0.98);
+            ratio_histogram->GetXaxis()->SetTitleSize(0.1f);
+            ratio_histogram->GetXaxis()->SetTitleOffset(0.98f);
             ratio_histogram->GetXaxis()->SetTitleFont(62);
             //ratio_histogram->GetXaxis()->SetLabelColor(kBlack);
-            ratio_histogram->GetXaxis()->SetLabelSize(0.1);
+            ratio_histogram->GetXaxis()->SetLabelSize(0.1f);
             ratio_histogram->SetMarkerStyle(20);
             ratio_histogram->SetMarkerColor(1);
             ratio_histogram->SetMarkerSize(1);
@@ -351,8 +351,8 @@ public:
             TLine* line2 = new TLine();
             line2->SetLineStyle(3);
             line2->DrawLine(ratio_histogram->GetXaxis()->GetXmin(), 0.8, ratio_histogram->GetXaxis()->GetXmax(), 0.8);
-            ratio_pad->SetTopMargin(0.04);
-            ratio_pad->SetBottomMargin(0.3);
+            ratio_pad->SetTopMargin(0.04f);
+            ratio_pad->SetBottomMargin(0.3f);
             ratio_pad->Update();
         }
 

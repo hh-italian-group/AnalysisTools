@@ -67,7 +67,7 @@ std::istream& operator >>(std::istream& s, Condition& cond)
 
     bool first = true;
     cond.entry = "";
-    char c;
+    char c = '\0';
     while(s.good()) {
         s >> c;
         if(first && c == '1') {

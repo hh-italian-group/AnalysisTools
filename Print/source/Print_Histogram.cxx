@@ -14,7 +14,7 @@ protected:
                          const PlotOptions& plot_options) const
     {
         SimpleHistogramSource::Prepare(histogram,display_name,plot_options);
-        histogram->Rebin(rebinFactor);
+        histogram->Rebin(static_cast<int>(rebinFactor));
     }
 
 private:

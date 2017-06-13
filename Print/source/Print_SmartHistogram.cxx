@@ -19,7 +19,7 @@ protected:
         const std::string name = s_name.str();
         const std::string command = "values>>+" + name;
 
-        TH1D* histogram = new TH1D(name.c_str(), name.c_str(), nBins, xRange.min, xRange.max);
+        TH1D* histogram = new TH1D(name.c_str(), name.c_str(), static_cast<int>(nBins), xRange.min, xRange.max);
         tree->Draw(command.c_str(), "");
         return histogram;
     }

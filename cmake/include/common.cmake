@@ -23,21 +23,19 @@ get_filename_component(CMSSW_BASE_SRC "${AnalysisTools_DIR}" DIRECTORY)
 include_directories("${CMSSW_BASE_SRC}" "${AnalysisTools_DIR}/Core/include" "${PROJECT_SOURCE_DIR}")
 
 file(GLOB_RECURSE HEADER_LIST "*.h" "*.hh")
-add_custom_target(headers SOURCES ${HEADER_LIST})
-
 file(GLOB_RECURSE SOURCE_LIST "*.cxx" "*.C" "*.cpp" "*.cc")
-add_custom_target(sources SOURCES ${SOURCE_LIST})
-
 file(GLOB_RECURSE EXE_SOURCE_LIST "*.cxx")
-
 file(GLOB_RECURSE SCRIPT_LIST "*.sh" "*.py")
-add_custom_target(scripts SOURCES ${SCRIPT_LIST})
-
 file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml" "*.txt")
-add_custom_target(configs SOURCES ${CONFIG_LIST})
 
 set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -O3")
+set(CXX_COMMON_FLAGS "-std=c++14 -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-unused-macros \
+                      -Wno-newline-eof -Wno-exit-time-destructors -Wno-global-constructors \
+                      -Wno-gnu-zero-variadic-macro-arguments -Wno-documentation -Wno-shadow -Wno-missing-prototypes \
+                      -Wno-unknown-pragmas -Wno-weak-vtables -Wno-format-nonliteral -Wno-double-promotion \
+                      -Wno-float-equal -Wno-padded")
+set(CMAKE_CXX_FLAGS "${CXX_COMMON_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -g")
 
 set(LinkDef "${AnalysisTools_DIR}/Core/include/LinkDef.h")
 set(RootDict "${CMAKE_BINARY_DIR}/RootDictionaries.cpp")
@@ -47,12 +45,14 @@ add_custom_command(OUTPUT "${RootDict}"
                    IMPLICIT_DEPENDS CXX "${LinkDef}"
                    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                    VERBATIM)
+set_source_files_properties(${RootDict} PROPERTIES COMPILE_FLAGS "-w")
+add_custom_target(GenerateRootDict DEPENDS "${RootDict}")
 set(EXE_LIST)
 foreach(exe_source ${EXE_SOURCE_LIST})
     get_filename_component(exe_name "${exe_source}" NAME_WE)
     message("Adding executable \"${exe_name}\"...")
     add_executable("${exe_name}" "${exe_source}" "${RootDict}")
+    add_dependencies("${exe_name}" GenerateRootDict)
     target_link_libraries("${exe_name}" ${ALL_LIBS})
     list(APPEND EXE_LIST "${exe_name}")
 endforeach()
-
