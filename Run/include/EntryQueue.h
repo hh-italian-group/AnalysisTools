@@ -43,11 +43,11 @@ public:
         return need_to_loop;
     }
 
-    void SetAllDone()
+    void SetAllDone(bool value = true)
     {
         {
             std::unique_lock<std::mutex> lock(mutex);
-            all_done = true;
+            all_done = value;
         }
         cond_var.notify_all();
     }
