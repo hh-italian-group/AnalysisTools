@@ -26,14 +26,14 @@ file(GLOB_RECURSE HEADER_LIST "*.h" "*.hh")
 file(GLOB_RECURSE SOURCE_LIST "*.cxx" "*.C" "*.cpp" "*.cc")
 file(GLOB_RECURSE EXE_SOURCE_LIST "*.cxx")
 file(GLOB_RECURSE SCRIPT_LIST "*.sh" "*.py")
-file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml" "*.txt")
+file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml" "*.txt" "*.md")
 
 set(CMAKE_CXX_COMPILER g++)
 set(CXX_COMMON_FLAGS "-std=c++14 -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-unused-macros \
                       -Wno-newline-eof -Wno-exit-time-destructors -Wno-global-constructors \
                       -Wno-gnu-zero-variadic-macro-arguments -Wno-documentation -Wno-shadow -Wno-missing-prototypes \
                       -Wno-unknown-pragmas -Wno-weak-vtables -Wno-format-nonliteral -Wno-double-promotion \
-                      -Wno-float-equal -Wno-padded")
+                      -Wno-float-equal -Wno-padded -Wno-unused-member-function")
 set(CMAKE_CXX_FLAGS "${CXX_COMMON_FLAGS} -O3")
 set(CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -g")
 
