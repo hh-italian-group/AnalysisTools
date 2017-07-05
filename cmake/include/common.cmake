@@ -1,7 +1,7 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${AnalysisTools_DIR}/cmake/modules")
 
 find_package(ROOT REQUIRED COMPONENTS Core Hist RIO Tree Physics Graf Gpad Matrix MathCore GenVector TMVA)
-find_package(BoostEx REQUIRED COMPONENTS program_options filesystem regex system thread)
+find_package(BoostEx REQUIRED COMPONENTS program_options filesystem regex system thread unit_test_framework)
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${ROOT_INCLUDE_DIR})
 set(ALL_LIBS ${Boost_LIBRARIES} ${ROOT_LIBRARIES} pthread)
 
@@ -34,7 +34,7 @@ if(APPLE)
     set(CXX_OS_SPECIFIC_FLAGS "-Weverything -Wno-missing-prototypes -Wno-unused-member-function -Wno-weak-vtables \
                                -Wno-documentation -Wno-gnu-zero-variadic-macro-arguments -Wno-global-constructors \
                                -Wno-exit-time-destructors -Wno-newline-eof -Wno-c++98-compat-pedantic \
-                               -Wno-c++98-compat")
+                               -Wno-c++98-compat -Wno-disabled-macro-expansion")
 else()
     set(CXX_OS_SPECIFIC_FLAGS "-Wall")
 endif()
@@ -57,11 +57,15 @@ add_custom_command(OUTPUT "${RootDict}"
 set_source_files_properties(${RootDict} PROPERTIES COMPILE_FLAGS "-w")
 add_custom_target(GenerateRootDict DEPENDS "${RootDict}")
 set(EXE_LIST)
+set(TEST_LIST)
 foreach(exe_source ${EXE_SOURCE_LIST})
     get_filename_component(exe_name "${exe_source}" NAME_WE)
     message("Adding executable \"${exe_name}\"...")
     add_executable("${exe_name}" "${exe_source}" "${RootDict}")
     add_dependencies("${exe_name}" GenerateRootDict)
     target_link_libraries("${exe_name}" ${ALL_LIBS})
+    if(exe_name MATCHES "_t$")
+        list(APPEND TEST_LIST "${exe_name}")
+    endif()
     list(APPEND EXE_LIST "${exe_name}")
 endforeach()
