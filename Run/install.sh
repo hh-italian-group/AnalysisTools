@@ -20,7 +20,7 @@ BUILD_ROOT="$1"
 SOURCE_ROOT="$(pwd)"
 
 if [ "x$CMAKE" = "x" ] ; then
-	CMAKE=cmake
+	CMAKE=cmake3
 fi
 
 for PROJECT_NAME in "${@:2}" ; do
