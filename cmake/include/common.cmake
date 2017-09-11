@@ -29,16 +29,11 @@ file(GLOB_RECURSE SCRIPT_LIST "*.sh" "*.py")
 list(FILTER SCRIPT_LIST EXCLUDE REGEX "/__init__\\.py$")
 file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml" "*.txt" "*.md")
 
-set(CMAKE_CXX_COMPILER g++)
-if(APPLE)
-    set(CXX_OS_SPECIFIC_FLAGS "-Weverything -Wno-missing-prototypes -Wno-unused-member-function -Wno-weak-vtables \
-                               -Wno-documentation -Wno-gnu-zero-variadic-macro-arguments -Wno-global-constructors \
-                               -Wno-exit-time-destructors -Wno-newline-eof -Wno-c++98-compat-pedantic \
-                               -Wno-c++98-compat -Wno-disabled-macro-expansion")
-else()
-    set(CXX_OS_SPECIFIC_FLAGS "-Wall")
-endif()
-
+set(CMAKE_CXX_COMPILER clang++)
+set(CXX_OS_SPECIFIC_FLAGS "-Weverything -Wno-missing-prototypes -Wno-unused-member-function -Wno-weak-vtables \
+                           -Wno-documentation -Wno-gnu-zero-variadic-macro-arguments -Wno-global-constructors \
+                           -Wno-exit-time-destructors -Wno-newline-eof -Wno-c++98-compat-pedantic \
+                           -Wno-c++98-compat -Wno-disabled-macro-expansion")
 set(CXX_WARNING_FLAGS "-Wno-unused-macros -Wno-shadow -Wno-unknown-pragmas -Wno-format-nonliteral \
                        -Wno-double-promotion -Wno-float-equal -Wno-padded")
 
