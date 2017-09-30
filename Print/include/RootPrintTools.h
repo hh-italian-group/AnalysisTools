@@ -16,20 +16,10 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TColor.h>
 
 #include "AnalysisTools/Core/include/RootExt.h"
+#include "AnalysisTools/Core/include/NumericPrimitives.h"
+#include "PlotPrimitives.h"
 
 namespace root_ext {
-
-static const std::map<std::string, EColor> colorMapName = {{"white",kWhite}, {"black",kBlack}, {"gray",kGray},
-                                                           {"red",kRed}, {"green",kGreen}, {"blue",kBlue},
-                                                           {"yellow",kYellow}, {"magenta",kMagenta}, {"cyan",kCyan},
-                                                           {"orange",kOrange}, {"spring",kSpring}, {"teal",kTeal},
-                                                           {"azure",kAzure},
-                                                           {"azure_custom", static_cast<EColor>(TColor::GetColor(100,182,232))},
-                                                           {"violet",kViolet},{"pink",kPink},
-                                                           {"pink_custom", static_cast<EColor>(TColor::GetColor(250,202,255))},
-                                                           {"red_custom", static_cast<EColor>(TColor::GetColor(222,90,106))},
-                                                           {"violet_custom", static_cast<EColor>(TColor::GetColor(155,152,204))},
-                                                           {"yellow_custom", static_cast<EColor>(TColor::GetColor(248,206,104))}};
 
 int CreateTransparentColor(int color, float alpha)
 {
@@ -41,15 +31,11 @@ int CreateTransparentColor(int color, float alpha)
   return new_idx;
 }
 
-struct Range {
-    Double_t min, max;
-    Range() : min(0), max(0) {}
-    Range(Double_t _min, Double_t _max) : min(_min), max(_max) {}
-};
-
 template<typename Histogram, typename ValueType=Double_t>
 class HistogramFitter {
 public:
+    using Range = ::analysis::Range<ValueType>;
+
     static ValueType FindMinLimitX(const Histogram& h)
     {
         for(Int_t i = 0; i < h.GetNbinsX(); ++i) {
@@ -96,36 +82,38 @@ public:
             return;
 
         if(fitX) {
-            xRange.min = std::numeric_limits<ValueType>::max();
-            xRange.max = std::numeric_limits<ValueType>::lowest();
+            ValueType min = std::numeric_limits<ValueType>::max();
+            ValueType max = std::numeric_limits<ValueType>::lowest();
             for(auto h : hists) {
                 if(!h) continue;
-                xRange.min = std::min(xRange.min, FindMinLimitX(*h));
-                xRange.max = std::max(xRange.max, FindMaxLimitX(*h));
+                min = std::min(min, FindMinLimitX(*h));
+                max = std::max(max, FindMaxLimitX(*h));
             }
+            xRange = Range(min, max);
         }
 
         if(fitY) {
-            yRange.min = std::numeric_limits<ValueType>::max();
-            yRange.max = std::numeric_limits<ValueType>::lowest();
+            ValueType min = std::numeric_limits<ValueType>::max();
+            ValueType max = std::numeric_limits<ValueType>::lowest();
             for(auto h : hists) {
                 if(!h) continue;
-                yRange.min = std::min(yRange.min, FindMinLimitY(*h));
-                yRange.max = std::max(yRange.max, FindMaxLimitY(*h));
+                min = std::min(min, FindMinLimitY(*h));
+                max = std::max(max, FindMaxLimitY(*h));
             }
             const double factor = isLogY ? 2.0 : 1.1;
-            yRange.min /= factor;
-            yRange.max *= factor;
+            min /= factor;
+            max *= factor;
             if(isLogY) {
-                yRange.min = std::max(yRange.min, std::numeric_limits<ValueType>::min());
-                yRange.max = std::max(yRange.max, std::numeric_limits<ValueType>::min());
+                min = std::max(min, std::numeric_limits<ValueType>::min());
+                max = std::max(max, std::numeric_limits<ValueType>::min());
             }
+            yRange = Range(min, max);
         }
 
         for(auto h : hists) {
             if(!h) continue;
-            h->SetAxisRange(xRange.min, xRange.max, "X");
-            h->SetAxisRange(yRange.min, yRange.max, "Y");
+            h->SetAxisRange(xRange.min(), xRange.max(), "X");
+            h->SetAxisRange(yRange.min(), yRange.max(), "Y");
         }
     }
 
@@ -133,31 +121,19 @@ private:
     HistogramFitter() {}
 };
 
-struct Point {
-    Double_t x, y;
-    Point() : x(0), y(0) {}
-    Point(Double_t _x, Double_t _y) : x(_x), y(_y) {}
-};
-
-struct Box {
-    Point left_bottom, right_top;
-    Box() {}
-    Box(const Point& _left_bottom, const Point& _right_top) : left_bottom(_left_bottom), right_top(_right_top) {}
-    Box(Double_t left_bottom_x, Double_t left_bottom_y, Double_t right_top_x, Double_t right_top_y)
-        : left_bottom(left_bottom_x, left_bottom_y), right_top(right_top_x, right_top_y) {}
-};
-
 class Adapter {
 public:
-    static TPaveLabel* NewPaveLabel(const Box& box, const std::string& text)
+    static TPaveLabel* NewPaveLabel(const Box<double>& box, const std::string& text)
     {
-        return new TPaveLabel(box.left_bottom.x, box.left_bottom.y, box.right_top.x, box.right_top.y, text.c_str());
+        return new TPaveLabel(box.left_bottom().x(), box.left_bottom().y(), box.right_top().x(), box.right_top().y(),
+                              text.c_str());
     }
 
-    static TPad* NewPad(const Box& box)
+    static TPad* NewPad(const Box<double>& box)
     {
         static const char* pad_name = "pad";
-        return new TPad(pad_name, pad_name, box.left_bottom.x, box.left_bottom.y, box.right_top.x, box.right_top.y);
+        return new TPad(pad_name, pad_name, box.left_bottom().x(), box.left_bottom().y(), box.right_top().x(),
+                        box.right_top().y());
     }
 
 private:
@@ -170,12 +146,12 @@ public:
     struct Options {
         Color_t color;
         Width_t line_width;
-        Box pave_stats_box;
+        Box<double> pave_stats_box;
         Double_t pave_stats_text_size;
         Color_t fit_color;
         Width_t fit_line_width;
         Options() : color(kBlack), line_width(1), pave_stats_text_size(0), fit_color(kBlack), fit_line_width(1) {}
-        Options(Color_t _color, Width_t _line_width, const Box& _pave_stats_box, Double_t _pave_stats_text_size,
+        Options(Color_t _color, Width_t _line_width, const Box<double>& _pave_stats_box, Double_t _pave_stats_text_size,
             Color_t _fit_color, Width_t _fit_line_width)
             : color(_color), line_width(_line_width), pave_stats_box(_pave_stats_box),
               pave_stats_text_size(_pave_stats_text_size), fit_color(_fit_color), fit_line_width(_fit_line_width) {}
@@ -206,7 +182,7 @@ public:
         options.push_back(entry.plot_options);
     }
 
-    void Superpose(TPad* main_pad, TPad* stat_pad, bool draw_legend, const Box& legend_box,
+    void Superpose(TPad* main_pad, TPad* stat_pad, bool draw_legend, const Box<double>& legend_box,
                    const std::string& draw_options)
     {
         if(!histograms.size() || !main_pad)
@@ -218,8 +194,8 @@ public:
 
         TLegend* legend = 0;
         if(draw_legend) {
-            legend = new TLegend(legend_box.left_bottom.x, legend_box.left_bottom.y,
-                                 legend_box.right_top.x, legend_box.right_top.y);
+            legend = new TLegend(legend_box.left_bottom().x(), legend_box.left_bottom().y(),
+                                 legend_box.right_top().x(), legend_box.right_top().y());
         }
 
         for(unsigned n = 0; n < histograms.size(); ++n) {
@@ -245,10 +221,10 @@ public:
             TPaveStats *pave_stats_copy = root_ext::CloneObject(*pave_stats);
             h->SetStats(0);
 
-            pave_stats_copy->SetX1NDC(o.pave_stats_box.left_bottom.x);
-            pave_stats_copy->SetX2NDC(o.pave_stats_box.right_top.x);
-            pave_stats_copy->SetY1NDC(o.pave_stats_box.left_bottom.y);
-            pave_stats_copy->SetY2NDC(o.pave_stats_box.right_top.y);
+            pave_stats_copy->SetX1NDC(o.pave_stats_box.left_bottom().x());
+            pave_stats_copy->SetX2NDC(o.pave_stats_box.right_top().x());
+            pave_stats_copy->SetY1NDC(o.pave_stats_box.left_bottom().y());
+            pave_stats_copy->SetY2NDC(o.pave_stats_box.right_top().y());
             pave_stats_copy->ResetAttText();
             pave_stats_copy->SetTextColor(o.color);
             pave_stats_copy->SetTextSize(static_cast<float>(o.pave_stats_text_size));
@@ -267,27 +243,3 @@ private:
 };
 
 } // root_ext
-
-
-std::istream& operator>>(std::istream& s, EColor& color){
-    std::string name;
-    s >> name;
-    if (!root_ext::colorMapName.count(name)){
-        std::ostringstream ss;
-        ss << "undefined color: '" << name ;
-        throw std::runtime_error(ss.str());
-    }
-    color = root_ext::colorMapName.at(name);
-    return s;
-}
-
-std::ostream& operator<<(std::ostream& s, const EColor& color){
-    for(const auto& entry : root_ext::colorMapName) {
-        if(entry.second == color) {
-            s << entry.first;
-            return s;
-        }
-    }
-    s << "Unknown color " << color;
-    return s;
-}

@@ -9,6 +9,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <boost/program_options.hpp>
 #include <TROOT.h>
 #include <TH1.h>
+#include <TH2.h>
 
 #define REQ_ARG(type, name) run::Argument<type> name{#name, ""}
 #define OPT_ARG(type, name, default_value) run::Argument<type> name{#name, "", default_value}
@@ -68,6 +69,8 @@ int Main(int argc, char* argv[], const Options& options, const options_descripti
 
     try {
         TH1::SetDefaultSumw2();
+        TH1::AddDirectory(kFALSE);
+        TH2::AddDirectory(kFALSE);
         gROOT->ProcessLine("#include <vector>");
         gROOT->SetMustClean(kFALSE);
         if(!ParseProgramArguments(argc, argv, options_desc, pos_desc))

@@ -1,5 +1,5 @@
 project(AnalysisTools)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.6)
 
 set(AnalysisTools_DIR "${PROJECT_SOURCE_DIR}")
 include("${AnalysisTools_DIR}/cmake/include/common.cmake")

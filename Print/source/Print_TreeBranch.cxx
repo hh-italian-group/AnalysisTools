@@ -9,7 +9,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 class MyHistogramSource : public root_ext::HistogramSource<TH1D, Double_t, TTree> {
 public:
-    MyHistogramSource(const std::string& _branchName, const root_ext::Range& _xRange, unsigned _nBins)
+    MyHistogramSource(const std::string& _branchName, const analysis::Range<double>& _xRange, unsigned _nBins)
         : branchName(_branchName), xRange(_xRange), nBins(_nBins) {}
 protected:
     virtual TH1D* Convert(TTree* tree) const
@@ -17,14 +17,14 @@ protected:
         const std::string name = branchName + "_hist";
         const std::string command = branchName + ">>+" + name;
 
-        TH1D* histogram = new TH1D(name.c_str(), name.c_str(), static_cast<int>(nBins), xRange.min, xRange.max);
+        TH1D* histogram = new TH1D(name.c_str(), name.c_str(), static_cast<int>(nBins), xRange.min(), xRange.max());
         tree->Draw(command.c_str(), "");
         return histogram;
     }
 
 private:
     std::string branchName;
-    root_ext::Range xRange;
+    analysis::Range<double> xRange;
     unsigned nBins;
 };
 
@@ -98,7 +98,7 @@ private:
     std::vector<FileTagPair> inputs;
     root_ext::SingleSidedPage page;
     Printer printer;
-    root_ext::Range xRange;
+    analysis::Range<double> xRange;
     MyHistogramSource source;
 };
 

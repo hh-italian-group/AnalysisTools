@@ -42,18 +42,18 @@ public:
         page.layout.has_title = draw_title;
         if (draw_ratio){
             if (page.layout.has_title) {
-                page.side.layout.main_pad = root_ext::Box(0.02,0.19,0.95,0.94);
-                page.side.layout.ratio_pad = root_ext::Box(0.02,0.02,1,0.28);
+                page.side.layout.main_pad = root_ext::Box<double>(0.02,0.19,0.95,0.94);
+                page.side.layout.ratio_pad = root_ext::Box<double>(0.02,0.02,1,0.28);
             } else {
-                page.side.layout.main_pad = root_ext::Box(0.02,0.21,1,1);
-                page.side.layout.ratio_pad = root_ext::Box(0.02,0.02,1,0.30);
+                page.side.layout.main_pad = root_ext::Box<double>(0.02,0.21,1,1);
+                page.side.layout.ratio_pad = root_ext::Box<double>(0.02,0.02,1,0.30);
             }
         }
         else {
             if (page.layout.has_title) {
-                page.side.layout.main_pad = root_ext::Box(0.02,0.02,0.95,0.94);
+                page.side.layout.main_pad = root_ext::Box<double>(0.02,0.02,0.95,0.94);
             } else {
-                page.side.layout.main_pad = root_ext::Box(0.,0., 1, 1);
+                page.side.layout.main_pad = root_ext::Box<double>(0.,0., 1, 1);
             }
         }
 
@@ -106,10 +106,11 @@ public:
 
     const std::string& GetTitle() const { return page.title; }
 
-    void AddBackgroundHistogram(const Histogram& original_histogram, const std::string& legend_title, Color_t color)
+    void AddBackgroundHistogram(const Histogram& original_histogram, const std::string& legend_title,
+                                const root_ext::Color& color)
     {
         hist_ptr histogram = PrepareHistogram(original_histogram);
-        histogram->SetFillColor(color);
+        histogram->SetFillColor(static_cast<Color_t>(color.GetColorId()));
         histogram->SetFillStyle(1001);
         histogram->SetLegendTitle(legend_title);
         background_histograms.push_back(histogram);
@@ -123,8 +124,8 @@ public:
             sum_backgound_histogram->Add(histogram.get());
     }
 
-    void AddSignalHistogram(const Histogram& original_signal, const std::string& legend_title, Color_t color,
-                            unsigned scale_factor)
+    void AddSignalHistogram(const Histogram& original_signal, const std::string& legend_title,
+                            const root_ext::Color& color, double scale_factor)
     {
         hist_ptr histogram = PrepareHistogram(original_signal);
         //Reb
@@ -133,7 +134,7 @@ public:
         histogram->SetLineStyle(2);
         histogram->SetFillColor(0);
 		//histogram->SetLineColor(kBlue+3);
-        histogram->SetLineColor(color);
+        histogram->SetLineColor(static_cast<Color_t>(color.GetColorId()));
         histogram->SetLineWidth(3);
         //ours
         //histogram->SetLineColor(color);
@@ -370,7 +371,7 @@ private:
     hist_ptr PrepareHistogram(const Histogram& original_histogram)
     {
         hist_ptr histogram(new Histogram(original_histogram));
-        histogram->SetLineColor(root_ext::colorMapName.at("black"));
+        histogram->SetLineColor(kBlack);
         histogram->SetLineWidth(1.);
         if (histogram->NeedToDivideByBinWidth())
             ReweightWithBinWidth(histogram);

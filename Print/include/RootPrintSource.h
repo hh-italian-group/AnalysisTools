@@ -11,14 +11,14 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 namespace root_ext {
 
 struct PageSideLayout {
-    Box main_pad;
+    Box<double> main_pad;
     bool has_stat_pad;
-    Box stat_pad;
+    Box<double> stat_pad;
     bool has_legend;
     bool has_legend_pad;
-    Box legend_pad;
+    Box<double> legend_pad;
     bool has_ratio_pad;
-    Box ratio_pad;
+    Box<double> ratio_pad;
 };
 
 struct PageSide {
@@ -31,14 +31,14 @@ struct PageSide {
     bool use_log_scaleY;
     bool fit_range_x;
     bool fit_range_y;
-    Range xRange;
-    Range yRange;
+    analysis::Range<double> xRange;
+    analysis::Range<double> yRange;
     PageSideLayout layout;
 };
 
 struct PageLayout {
     bool has_title;
-    Box title_box;
+    Box<double> title_box;
     Font_t title_font;
     std::string global_style;
     Int_t stat_options;
@@ -60,7 +60,7 @@ struct SingleSidedPage : public Page {
     explicit SingleSidedPage(bool has_title = true, bool has_stat_pad = true, bool has_legend = true)
     {
         layout.has_title = has_title;
-        layout.title_box = Box(0.1, 0.94, 0.9, 0.98);
+        layout.title_box = Box<double>(0.1, 0.94, 0.9, 0.98);
         layout.title_font = 52;
         layout.global_style = "Plain";
         if(has_stat_pad) {
@@ -78,9 +78,9 @@ struct SingleSidedPage : public Page {
         side.fit_range_x = true;
         side.fit_range_y = true;
 
-        side.layout.main_pad = Box(0.01, 0.01, 0.85, 0.91);
-        side.layout.stat_pad = Box(0.86, 0.01, 0.99, 0.91);
-        side.layout.legend_pad = Box(0.5, 0.67, 0.88, 0.88);
+        side.layout.main_pad = Box<double>(0.01, 0.01, 0.85, 0.91);
+        side.layout.stat_pad = Box<double>(0.86, 0.01, 0.99, 0.91);
+        side.layout.legend_pad = Box<double>(0.5, 0.67, 0.88, 0.88);
     }
 
     virtual RegionCollection Regions() const
@@ -97,7 +97,7 @@ struct DoubleSidedPage : public Page {
     explicit DoubleSidedPage(bool has_title = true, bool has_stat_pad = true, bool has_legend = true)
     {
         layout.has_title = has_title;
-        layout.title_box = Box(0.1, 0.94, 0.9, 0.98);
+        layout.title_box = Box<double>(0.1, 0.94, 0.9, 0.98);
         layout.title_font = 52;
         layout.global_style = "Plain";
         if(has_stat_pad) {
@@ -114,9 +114,9 @@ struct DoubleSidedPage : public Page {
         left_side.use_log_scaleY = false;
         left_side.fit_range_x = true;
         left_side.fit_range_y = true;
-        left_side.layout.main_pad = Box(0.01, 0.01, 0.35, 0.91);
-        left_side.layout.stat_pad = Box(0.36, 0.01, 0.49, 0.91);
-        left_side.layout.legend_pad = Box(0.5, 0.67, 0.88, 0.88);
+        left_side.layout.main_pad = Box<double>(0.01, 0.01, 0.35, 0.91);
+        left_side.layout.stat_pad = Box<double>(0.36, 0.01, 0.49, 0.91);
+        left_side.layout.legend_pad = Box<double>(0.5, 0.67, 0.88, 0.88);
 
         right_side.layout.has_stat_pad = has_stat_pad;
         right_side.layout.has_legend = has_legend;
@@ -124,9 +124,9 @@ struct DoubleSidedPage : public Page {
         right_side.use_log_scaleY = false;
         right_side.fit_range_x = true;
         right_side.fit_range_y = true;
-        right_side.layout.main_pad = Box(0.51, 0.01, 0.85, 0.91);
-        right_side.layout.stat_pad = Box(0.86, 0.01, 0.99, 0.91);
-        right_side.layout.legend_pad = Box(0.5, 0.67, 0.88, 0.88);
+        right_side.layout.main_pad = Box<double>(0.51, 0.01, 0.85, 0.91);
+        right_side.layout.stat_pad = Box<double>(0.86, 0.01, 0.99, 0.91);
+        right_side.layout.legend_pad = Box<double>(0.5, 0.67, 0.88, 0.88);
     }
 
     virtual RegionCollection Regions() const
@@ -152,12 +152,12 @@ public:
         static std::vector<PlotOptions> options;
         if(!options.size())
         {
-            options.push_back( PlotOptions(kGreen, 1, root_ext::Box(0.01, 0.71, 0.99, 0.9), 0.1, kGreen, 2) );
-            options.push_back( PlotOptions(kViolet, 1, root_ext::Box(0.01, 0.51, 0.99, 0.7), 0.1, kViolet, 2) );
-            options.push_back( PlotOptions(kOrange, 1, root_ext::Box(0.01, 0.31, 0.99, 0.5), 0.1, kOrange, 2) );
-            options.push_back( PlotOptions(kRed, 1, root_ext::Box(0.01, 0.11, 0.99, 0.3), 0.1, kRed, 2) );
-            options.push_back( PlotOptions(kBlue, 1, root_ext::Box(0.01, 0.11, 0.99, 0.3), 0.1, kBlue, 2) );
-            options.push_back( PlotOptions(kBlack, 1, root_ext::Box(0.01, 0.11, 0.99, 0.3), 0.1, kBlack, 2) );
+            options.push_back( PlotOptions(kGreen, 1, root_ext::Box<double>(0.01, 0.71, 0.99, 0.9), 0.1, kGreen, 2) );
+            options.push_back( PlotOptions(kViolet, 1, root_ext::Box<double>(0.01, 0.51, 0.99, 0.7), 0.1, kViolet, 2) );
+            options.push_back( PlotOptions(kOrange, 1, root_ext::Box<double>(0.01, 0.31, 0.99, 0.5), 0.1, kOrange, 2) );
+            options.push_back( PlotOptions(kRed, 1, root_ext::Box<double>(0.01, 0.11, 0.99, 0.3), 0.1, kRed, 2) );
+            options.push_back( PlotOptions(kBlue, 1, root_ext::Box<double>(0.01, 0.11, 0.99, 0.3), 0.1, kBlue, 2) );
+            options.push_back( PlotOptions(kBlack, 1, root_ext::Box<double>(0.01, 0.11, 0.99, 0.3), 0.1, kBlack, 2) );
         }
         return n < options.size() ? options[n] : options[options.size() - 1];
     }

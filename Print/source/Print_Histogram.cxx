@@ -88,7 +88,7 @@ private:
     std::vector<FileTagPair> inputs;
     root_ext::SingleSidedPage page;
     Printer printer;
-    root_ext::Range xRange;
+    analysis::Range<double> xRange;
     MyHistogramSource source;
 };
 

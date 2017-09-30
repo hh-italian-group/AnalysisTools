@@ -41,27 +41,26 @@ struct Arguments {
     OPT_ARG(double, badThreshold, 0.01);
 };
 
-namespace{
-  template<typename T>
-  bool isBadEvent(T first, T second, double badThreshold) {
-     if(first == second) return false;
-     if(first == 0 || second == 0) return true;
-     const auto delta = first - second;
-     return std::abs<T>(delta/second) >= badThreshold;
-  }
-  template<>
-  bool isBadEvent<int>(int first, int second, double /*badThreshold*/) {
-     return first != second;
-  }
-  
-  template<>
-  bool isBadEvent<unsigned int>(unsigned int first, unsigned int second, double /*badThreshold*/) {
-     return first != second;
-  }
-  template<>
-  bool isBadEvent<bool>(bool first, bool second, double /*badThreshold*/) {
-     return first != second;
-  }
+namespace {
+template<typename T, bool is_integral = std::is_integral<T>::value>
+struct BadEventCheck {
+    static bool isBadEvent(T first, T second, double badThreshold)
+    {
+        if(first == second) return false;
+        if(first == 0 || second == 0) return true;
+        const auto delta = first - second;
+        return std::abs<T>(delta/second) >= badThreshold;
+    }
+};
+
+template<typename T>
+struct BadEventCheck<T, true> {
+    static bool isBadEvent(T first, T second, double /*badThreshold*/)
+    {
+        return first != second;
+    }
+};
+
 }
 
 namespace analysis {
@@ -422,7 +421,7 @@ private:
         const double y_value = other_value != OtherVarType(0)
                              ? double(static_cast<MyVarType>(other_value) - my_value)/other_value : -my_value;
         const auto diff = static_cast<MyVarType>(other_value) - my_value;
-        if (isBadEvent<MyVarType>(my_value, static_cast<MyVarType>(other_value), args.badThreshold()))
+        if (BadEventCheck<MyVarType>::isBadEvent(my_value, static_cast<MyVarType>(other_value), args.badThreshold()))
 		std::cout << "run:lumi:evt = " << event_entry_pair.first << ", other = " << other_value
 		    << ", my = " << my_value << ", other - my = " << diff << std::endl;
 	    histogram2D.Fill(other_value, y_value);
