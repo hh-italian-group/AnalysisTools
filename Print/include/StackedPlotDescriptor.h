@@ -143,11 +143,7 @@ public:
         //histogram->SetLineWidth(2); //3
         histogram->Scale(scale_factor);
         signal_histograms.push_back(histogram);
-        std::ostringstream ss;
-        if(scale_factor != 1)
-            ss << scale_factor << "x ";
-        ss << legend_title;
-        histogram->SetLegendTitle(ss.str());
+        histogram->SetLegendTitle(legend_title);
     }
 
     void AddDataHistogram(const Histogram& original_data, const std::string& legend_title,
