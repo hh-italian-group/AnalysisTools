@@ -42,11 +42,11 @@ public:
         page.layout.has_title = draw_title;
         if (draw_ratio){
             if (page.layout.has_title) {
-                page.side.layout.main_pad = root_ext::Box<double>(0.02,0.19,0.95,0.94);
-                page.side.layout.ratio_pad = root_ext::Box<double>(0.02,0.02,1,0.28);
+                page.side.layout.main_pad = root_ext::Box<double>(0.02, 0.19, 0.95, 0.94);
+                page.side.layout.ratio_pad = root_ext::Box<double>(0.02, 0.02, 0.95, 0.28);
             } else {
-                page.side.layout.main_pad = root_ext::Box<double>(0.02,0.21,1,1);
-                page.side.layout.ratio_pad = root_ext::Box<double>(0.02,0.02,1,0.30);
+                page.side.layout.main_pad = root_ext::Box<double>(0.02, 0.21, 1, 1);
+                page.side.layout.ratio_pad = root_ext::Box<double>(0.05, 0.02, 0.97, 0.30);
             }
         }
         else {
@@ -58,7 +58,7 @@ public:
         }
 
         if (draw_ratio){
-            legend = std::shared_ptr<TLegend>(new TLegend (0.6, 0.7, 0.85, 0.90)); // 0.6, 0.55, 0.85, 0.90
+            legend = std::shared_ptr<TLegend>(new TLegend (0.6, 0.64, 0.85, 0.89)); // 0.6, 0.55, 0.85, 0.90
         }
         else {
             legend = std::shared_ptr<TLegend>(new TLegend (0.52, 0.60, 0.89, 0.90));
