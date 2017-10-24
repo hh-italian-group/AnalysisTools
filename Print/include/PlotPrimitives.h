@@ -384,13 +384,13 @@ private:
     const TColor* t_color;
 };
 
-std::ostream& operator<<(std::ostream& s, const Color& c)
+inline std::ostream& operator<<(std::ostream& s, const Color& c)
 {
     s << c.ToString();
     return s;
 }
 
-std::istream& operator>>(std::istream& s, Color& c)
+inline std::istream& operator>>(std::istream& s, Color& c)
 {
 
     std::string name;
@@ -456,13 +456,13 @@ private:
     Integer _number, _precision;
 };
 
-std::ostream& operator<<(std::ostream& s, const Font& f)
+inline std::ostream& operator<<(std::ostream& s, const Font& f)
 {
     s << f.code();
     return s;
 }
 
-std::istream& operator>>(std::istream& s, Font& f)
+inline std::istream& operator>>(std::istream& s, Font& f)
 {
     Font::Integer font_code;
     s >> font_code;

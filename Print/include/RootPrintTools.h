@@ -21,7 +21,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 namespace root_ext {
 
-int CreateTransparentColor(int color, float alpha)
+inline int CreateTransparentColor(int color, float alpha)
 {
   TColor* adapt = gROOT->GetColor(color);
   int new_idx = gROOT->GetListOfColors()->GetSize() + 1;

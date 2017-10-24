@@ -42,8 +42,7 @@ bool drawLogo      = false;
 
 //void CMS_lumi( TPad* pad, int iPeriod=3, int iPosX=10 );
 
-void
-CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
+inline void CMS_lumi( TPad* pad, int iPeriod = 3, int iPosX = 10 )
 {
   bool outOfFrame    = false;
   if( iPosX/10==0 )

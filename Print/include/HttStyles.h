@@ -25,7 +25,7 @@ void SetLegendStyle(TLegend* leg);
 /// add CMSPreliminary logo, lumi and channel
 void CMSPrelim(const char* dataset, const char* channel, double lowX=0.4, double lowY=0.74);
 
-void SetStyle()
+inline void SetStyle()
 {
   TStyle *HttStyle = new TStyle("Htt-Style","The Perfect Style for Plots ;-)");
   gStyle = HttStyle;
@@ -114,7 +114,7 @@ void SetStyle()
   return;
 }
 
-TCanvas* MakeCanvas(const char* name, const char *title, int dX, int dY)
+inline TCanvas* MakeCanvas(const char* name, const char *title, int dX, int dY)
 {
   // Start with a canvas
   TCanvas *canvas = new TCanvas(name,title,0,0,dX,dY);
@@ -140,7 +140,7 @@ TCanvas* MakeCanvas(const char* name, const char *title, int dX, int dY)
   return canvas;
 }
 
-void InitSubPad(TPad* pad, int i)
+inline void InitSubPad(TPad* pad, int i)
 {
   pad->cd(i);
   TPad *tmpPad = dynamic_cast<TPad*>(pad->GetPad(i));
@@ -151,7 +151,7 @@ void InitSubPad(TPad* pad, int i)
   return;
 }
 
-void InitSignal(TH1 *hist)
+inline void InitSignal(TH1 *hist)
 {
   hist->SetFillStyle(0.);
   hist->SetLineStyle(11);
@@ -160,7 +160,7 @@ void InitSignal(TH1 *hist)
   //hist->SetLineColor(kBlue+3);
 }
 
-void InitHist(TH1 *hist, const char *xtit, const char *ytit, Color_t color, Style_t style)
+inline void InitHist(TH1 *hist, const char *xtit, const char *ytit, Color_t color, Style_t style)
 {
   hist->SetXTitle(xtit);
   hist->SetYTitle(ytit);
@@ -187,21 +187,21 @@ void InitHist(TH1 *hist, const char *xtit, const char *ytit, Color_t color, Styl
   return;
 }
 
-void InitData(TH1* hist)
+inline void InitData(TH1* hist)
 {
   hist->SetMarkerStyle(20.);
   hist->SetMarkerSize (1.3f);
   hist->SetLineWidth  ( 3.);
 }
 
-void SetLegendStyle(TLegend* leg)
+inline void SetLegendStyle(TLegend* leg)
 {
   leg->SetFillStyle (0);
   leg->SetFillColor (0);
   leg->SetBorderSize(0);
 }
 
-void CMSPrelim(const char* dataset, const char* channel, double lowX, double lowY)
+inline void CMSPrelim(const char* dataset, const char* channel, double lowX, double lowY)
 {
   /*
   TPaveText* cmsprel  = new TPaveText(lowX, lowY+0.06, lowX+0.30, lowY+0.16, "NDC");
