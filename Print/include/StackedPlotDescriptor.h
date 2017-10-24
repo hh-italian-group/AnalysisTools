@@ -238,7 +238,7 @@ public:
 
             stack->SetMaximum(maxY * bkg_hist->MaxYDrawScaleFactor());
 
-            const Double_t minY = page.side.use_log_scaleY ? 1 : 0;
+            const Double_t minY = page.side.use_log_scaleY ? 0.01 : 0;
             stack->SetMinimum(minY);
 
 
