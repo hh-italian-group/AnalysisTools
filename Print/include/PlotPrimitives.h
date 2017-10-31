@@ -44,6 +44,14 @@ struct Point<T, 1, positively_defined> {
 
     static bool IsValid(const T& x) { return !positively_defined || x >= 0; }
 
+    std::string ToString() const { return analysis::ToString(x()); }
+
+    static Point<T, 1, positively_defined> Parse(const std::string& str)
+    {
+        const auto x = analysis::Parse<T>(str);
+        return Point<T, 1, positively_defined>(x);
+    }
+
 private:
     T _x;
 };
@@ -78,46 +86,39 @@ struct Point<T, 2, positively_defined> {
 
     static bool IsValid(const T& x, const T& y) { return !positively_defined || (x >= 0 && y >= 0); }
 
+    std::string ToString() const { return analysis::ToString(x()) + ',' + analysis::ToString(y()); }
+
+    static Point<T, 2, positively_defined> Parse(const std::string& str)
+    {
+        const auto coord_list = analysis::SplitValueList(str, true, ",", false);
+        if(coord_list.size() != 2) throw analysis::exception("Invalid 2D point '%1%'.") % str;
+        const auto x = analysis::Parse<T>(coord_list.at(0));
+        const auto y = analysis::Parse<T>(coord_list.at(1));
+        return Point<T, 2, positively_defined>(x, y);
+    }
+
 private:
     T _x, _y;
 };
 
-template<typename T, bool positively_defined>
-std::ostream& operator<<(std::ostream& s, const Point<T, 2, positively_defined>& p)
+template<typename T, size_t n_dim>
+using Size = Point<T, n_dim, true>;
+
+template<typename T, size_t n_dim, bool positively_defined>
+std::ostream& operator<<(std::ostream& s, const Point<T, n_dim, positively_defined>& p)
 {
-    s << boost::format("%1% %2%") % p.x() % p.y();
+    s << p.ToString();
     return s;
 }
 
-template<typename T, bool positively_defined>
-std::istream& operator>>(std::istream& s, Point<T, 2, positively_defined>& p)
+template<typename T, size_t n_dim, bool positively_defined>
+std::istream& operator>>(std::istream& s, Point<T, n_dim, positively_defined>& p)
 {
-    T x, y;
-    s >> x >> y;
-    if(s.fail())
-        throw analysis::exception("Invalid point.");
-    p = Point<T, 2, positively_defined>(x, y);
+    std::string str;
+    s >> str;
+    p = Point<T, n_dim, positively_defined>::Parse(str);
     return s;
 }
-
-template<typename T, bool positively_defined>
-std::ostream& operator<<(std::ostream& s, const Point<T, 1, positively_defined>& p)
-{
-    s << p.x();
-    return s;
-}
-
-template<typename T, bool positively_defined>
-std::istream& operator>>(std::istream& s, Point<T, 1, positively_defined>& p)
-{
-    T x;
-    s >> x;
-    if(s.fail())
-        throw analysis::exception("Invalid point.");
-    p = Point<T, 1, positively_defined>(x);
-    return s;
-}
-
 
 template<typename T>
 struct Box {
@@ -222,17 +223,22 @@ private:
 template<typename T>
 std::ostream& operator<<(std::ostream& s, const MarginBox<T>& b)
 {
-    s << boost::format("%1% %2% %3% %4%") % b.left() % b.bottom() % b.right() % b.top();
+    s << boost::format("%1%,%2%,%3%,%4%") % b.left() % b.bottom() % b.right() % b.top();
     return s;
 }
 
 template<typename T>
 std::istream& operator>>(std::istream& s, MarginBox<T>& b)
 {
-    T left, bottom, right, top;
-    s >> left >> bottom >> right >> top;
-    if(s.fail())
+    std::string str;
+    s >> str;
+    const auto v_list = analysis::SplitValueList(str, true, ",", false);
+    if(v_list.size() != 4)
         throw analysis::exception("Invalid margin box.");
+    const T left = analysis::Parse<T>(v_list.at(0));
+    const T bottom = analysis::Parse<T>(v_list.at(1));
+    const T right = analysis::Parse<T>(v_list.at(2));
+    const T top = analysis::Parse<T>(v_list.at(3));
     b = MarginBox<T>(left, bottom, right, top);
     return s;
 }
@@ -356,6 +362,7 @@ public:
 
     bool IsSimple() const { return detail::ReferenceColorCollection::IsReferenceColor(GetColorId()); }
     int GetColorId() const { return GetTColor().GetNumber(); }
+    Color_t GetColor_t() const { return static_cast<Color_t>(GetColorId()); }
     const TColor& GetTColor() const { return *t_color; }
 
     std::string ToString() const
@@ -486,5 +493,15 @@ ENUM_NAMES(TextAlign) = {
     { TextAlign::RightCenter, "right_center" },
     { TextAlign::RightTop, "right_top" }
 };
+
+inline void DivideByBinWidth(TH1& histogram)
+{
+    for(Int_t n = 1; n <= histogram.GetNbinsX(); ++n) {
+        const double new_value = histogram.GetBinContent(n) / histogram.GetBinWidth(n);
+        const double new_bin_error = histogram.GetBinError(n) / histogram.GetBinWidth(n);
+        histogram.SetBinContent(n, new_value);
+        histogram.SetBinError(n, new_bin_error);
+    }
+}
 
 } // namespace root_ext

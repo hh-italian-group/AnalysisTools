@@ -370,19 +370,9 @@ private:
         histogram->SetLineColor(kBlack);
         histogram->SetLineWidth(1.);
         if (histogram->NeedToDivideByBinWidth())
-            ReweightWithBinWidth(histogram);
+            root_ext::DivideByBinWidth(*histogram);
         UpdateDrawInfo(histogram);
         return histogram;
-    }
-
-    static void ReweightWithBinWidth(hist_ptr histogram)
-    {
-        for(Int_t n = 1; n <= histogram->GetNbinsX(); ++n) {
-            const double new_value = histogram->GetBinContent(n) / histogram->GetBinWidth(n);
-            const double new_bin_error = histogram->GetBinError(n) / histogram->GetBinWidth(n);
-            histogram->SetBinContent(n, new_value);
-            histogram->SetBinError(n, new_bin_error);
-        }
     }
 
     static void BlindHistogram(hist_ptr histogram, const std::vector< std::pair<double, double> >& blind_regions)
