@@ -297,6 +297,7 @@ private:
             hist->SetMarkerColor(input->color.GetColor_t());
             if(draw_options->divide_by_bin_width)
                 root_ext::DivideByBinWidth(*hist);
+            hist->SetMarkerStyle(kDot);
         }
 
         input = inputs.begin();
