@@ -139,6 +139,8 @@ struct DrawOptions {
     Point axes_title_offsets{1.f, 1.f};
     double zero_threshold{-std::numeric_limits<double>::infinity()};
     float y_ratio_label_size{.04f};
+    double y_min_sf{1}, y_max_sf{1.2};
+    double max_ratio{-1}, allowed_ratio_margin{0.2};
 
     DrawOptions(const ItemCollection& config_items)
     {
@@ -154,6 +156,10 @@ struct DrawOptions {
         opt.Read("axes_title_offsets", axes_title_offsets);
         opt.Read("zero_threshold", zero_threshold);
         opt.Read("y_ratio_label_size", y_ratio_label_size);
+        opt.Read("y_min_sf", y_max_sf);
+        opt.Read("y_max_sf", y_max_sf);
+        opt.Read("max_ratio", max_ratio);
+        opt.Read("allowed_ratio_margin", allowed_ratio_margin);
     }
 };
 
@@ -284,6 +290,8 @@ private:
         auto input = inputs.begin();
         auto hist = input->histograms.at(dir_name).at(hist_name);
         std::map<std::string, PhysicalValue> integrals;
+        double y_min = std::numeric_limits<double>::infinity();
+        double y_max = -std::numeric_limits<double>::infinity();
 
         hist->SetTitle(title.c_str());
         hist->GetXaxis()->SetTitle(draw_options->x_title.c_str());
@@ -300,11 +308,13 @@ private:
             if(draw_options->divide_by_bin_width)
                 root_ext::DivideByBinWidth(*hist);
             hist->SetMarkerStyle(kDot);
+            UpdateYRange(hist, y_min, y_max);
         }
 
         input = inputs.begin();
         auto h1 = (input++)->histograms.at(dir_name).at(hist_name);
         auto h2 = (input++)->histograms.at(dir_name).at(hist_name);
+
 
         TRatioPlot* ratio_plot;
         {
@@ -319,6 +329,14 @@ private:
         ratio_plot->SetLowBottomMargin(draw_options->margins.bottom());
         ratio_plot->Draw();
         ratio_plot->GetLowerRefYaxis()->SetLabelSize(draw_options->y_ratio_label_size);
+        ratio_plot->GetUpperRefYaxis()->SetRangeUser(y_min * draw_options->y_min_sf, y_max * draw_options->y_max_sf);
+        if(draw_options->max_ratio > 0)
+            ratio_plot->GetLowerRefYaxis()->SetRangeUser(std::max(0., 2 - draw_options->max_ratio),
+                                                         draw_options->max_ratio);
+        std::vector<double> gridlines(2);
+        gridlines[0] = std::max(0., 1 - draw_options->allowed_ratio_margin);
+        gridlines[1] = 1 + draw_options->allowed_ratio_margin;
+        ratio_plot->SetGridlines(gridlines);
 
         for(; input != inputs.end(); ++input)
             input->histograms.at(dir_name).at(hist_name)->Draw("same");
@@ -340,6 +358,16 @@ private:
         canvas->Update();
 
         PrintCanvas(title, is_last);
+    }
+
+    static void UpdateYRange(HistPtr hist, double& y_min, double& y_max)
+    {
+        const auto min_bin = hist->GetMinimumBin();
+        const double hist_min = hist->GetBinContent(min_bin) - hist->GetBinErrorLow(min_bin);
+        y_min = std::min(0., std::min(hist_min, y_min));
+        const auto max_bin = hist->GetMaximumBin();
+        const double hist_max = hist->GetBinContent(max_bin) + hist->GetBinErrorUp(max_bin);
+        y_max = std::max(hist_max, y_max);
     }
 
 private:
