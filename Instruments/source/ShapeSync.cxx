@@ -283,6 +283,7 @@ private:
 
         auto input = inputs.begin();
         auto hist = input->histograms.at(dir_name).at(hist_name);
+        std::map<std::string, PhysicalValue> integrals;
 
         hist->SetTitle(title.c_str());
         hist->GetXaxis()->SetTitle(draw_options->x_title.c_str());
@@ -295,6 +296,7 @@ private:
             hist = input->histograms.at(dir_name).at(hist_name);
             hist->SetLineColor(input->color.GetColor_t());
             hist->SetMarkerColor(input->color.GetColor_t());
+            integrals[input->name] = Integral(*input->histograms.at(dir_name).at(hist_name), false);
             if(draw_options->divide_by_bin_width)
                 root_ext::DivideByBinWidth(*hist);
             hist->SetMarkerStyle(kDot);
@@ -322,7 +324,7 @@ private:
             input->histograms.at(dir_name).at(hist_name)->Draw("same");
 
         for(input = inputs.begin(); input != inputs.end(); ++input) {
-            auto integral = Integral(*input->histograms.at(dir_name).at(hist_name), false);
+            auto integral = integrals.at(input->name);
             std::wostringstream ss;
             ss << std::wstring(input->name.begin(), input->name.end()) << L": ";
             if(integral.GetValue() > draw_options->zero_threshold)
