@@ -33,6 +33,10 @@ else
     BUILD_PATH="$CMSSW_BASE/build"
 fi
 
+if [ ! -f .rootrc ] ; then
+    echo "RooFit.Banner: no" > .rootrc
+fi
+
 WORKING_PATH=$(pwd)
 cd "$BUILD_PATH"
 PROJECTS=$(ls)
