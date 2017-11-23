@@ -1,4 +1,4 @@
-/*! Configuration Print_SyncPlots.
+/*! Configuration EventSync.
 This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #pragma once
@@ -9,8 +9,9 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 #include "AnalysisTools/Core/include/EventIdentifier.h"
-#include "AnalysisTools/Core/include/ConfigReader.h"
 #include "AnalysisTools/Core/include/NumericPrimitives.h"
+#include "AnalysisTools/Core/include/TextIO.h"
+#include "AnalysisTools/Core/include/EnumNameMap.h"
 
 namespace analysis {
 
@@ -111,23 +112,37 @@ std::istream& operator >>(std::istream& s, Condition& cond)
 
 
 struct SyncPlotEntry {
-    std::string my_name, other_name;
+    static constexpr size_t N = 2;
+
+    std::array<std::string, N> names;
     size_t n_bins;
     Range<double> x_range;
-    Condition my_condition, other_condition;
+    std::array<Condition, N> conditions;
+
+    bool HasAtLeastOneCondition() const
+    {
+        for(size_t n = 0; n < N; ++n) {
+            if(!conditions[n].always_true)
+                return true;
+        }
+        return false;
+    }
 
     SyncPlotEntry() : n_bins(0) {}
 };
 
 std::ostream& operator <<(std::ostream& s, const SyncPlotEntry& entry)
 {
-    static const std::string sep = " ";
-    s << entry.my_name << sep;
-    if(entry.other_name.size())
-        s << entry.other_name <<  sep;
+    static constexpr char sep = ' ';
+    for(size_t n = 0; n < SyncPlotEntry::N; ++n) {
+        if(entry.names[n].size())
+            s << entry.names[n] <<  sep;
+    }
     s << entry.n_bins << sep << entry.x_range;
-    if(!entry.my_condition.always_true || !entry.other_condition.always_true)
-        s << sep << entry.my_condition << sep << entry.other_condition;
+    if(entry.HasAtLeastOneCondition()) {
+        for(size_t n = 0; n < SyncPlotEntry::N; ++n)
+            s << sep << entry.conditions[n];
+    }
     return s;
 }
 
@@ -135,18 +150,18 @@ std::istream& operator >>(std::istream& s, SyncPlotEntry& entry)
 {
     std::string line;
     std::getline(s, line);
-    std::vector<std::string> params = ConfigEntryReader::ParseOrderedParameterList(line, true);
+    const auto params = SplitValueList(line, true);
 
     try {
         if(params.size() >= 4 && params.size() <= 7) {
             size_t n = 0;
-            entry.my_name = params.at(n++);
+            entry.names[0] = params.at(n++);
 
             if(TryParse(params.at(n), entry.n_bins)) {
-                entry.other_name = entry.my_name;
+                entry.names[1] = entry.names[0];
                 ++n;
             } else {
-                entry.other_name = params.at(n++);
+                entry.names[1] = params.at(n++);
                 entry.n_bins = Parse<size_t>(params.at(n++));
             }
             const std::string range_str = params.at(n) + " " + params.at(n+1);
@@ -154,28 +169,30 @@ std::istream& operator >>(std::istream& s, SyncPlotEntry& entry)
             n += 2;
             if(n < params.size()) {
                 std::istringstream ss(params.at(n++));
-                ss >> entry.my_condition;
+                ss >> entry.conditions[0];
             }
             if(n < params.size()) {
                 std::istringstream ss(params.at(n++));
-                ss >> entry.other_condition;
+                ss >> entry.conditions[1];
             }
 
             return s;
         }
     } catch(exception& e) { std::cerr << "ERROR: " << e.what() << std::endl; }
 
-    throw exception("Invalid plot entry '%1%'") % line;
+    throw exception("Invalid plot entry '%1%'.") % line;
 }
 
 class SyncPlotConfig {
 public:
+    static constexpr size_t N = SyncPlotEntry::N;
+
     explicit SyncPlotConfig(const std::string& file_name)
     {
         std::ifstream cfg(file_name);
 
-        myIdBranches = ReadIdBranches(cfg);
-        otherIdBranches = ReadIdBranches(cfg);
+        for(size_t n = 0; n < N; ++n)
+            idBranches[n] = ReadIdBranches(cfg);
 
         while(cfg.good()) {
             std::string cfgLine;
@@ -188,8 +205,12 @@ public:
         }
     }
 
-    const std::vector<std::string>& GetMyIdBranches() const { return myIdBranches; }
-    const std::vector<std::string>& GetOtherIdBranches() const { return otherIdBranches; }
+    const std::vector<std::string>& GetIdBranches(size_t n) const
+    {
+        if(n >= N)
+            throw exception("Invalid id branches index.");
+        return idBranches[n];
+    }
     const std::vector<SyncPlotEntry>& GetEntries() const { return entries; }
 
 private:
@@ -197,14 +218,14 @@ private:
     {
         std::string cfgLine;
         std::getline(cfg, cfgLine);
-        auto idBranches = ConfigEntryReader::ParseOrderedParameterList(cfgLine, false);
-        if(idBranches.size() != 3)
+        auto idBranches = SplitValueList(cfgLine, false);
+        if(idBranches.size() < 3 || idBranches.size() > 4)
             throw exception("Invalid event id branches line '%1%'.") % cfgLine;
         return idBranches;
     }
 
 private:
-    std::vector<std::string> myIdBranches, otherIdBranches;
+    std::array<std::vector<std::string>, N> idBranches;
     std::vector<SyncPlotEntry> entries;
 };
 
