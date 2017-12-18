@@ -9,6 +9,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TROOT.h>
 #include <TColor.h>
 #include <TAttText.h>
+#include <TH1.h>
 #include "EnumNameMap.h"
 #include "NumericPrimitives.h"
 
