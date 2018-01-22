@@ -6,6 +6,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <sstream>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <TH1.h>
 #include <TROOT.h>
 #include <TColor.h>
 #include <TAttText.h>
@@ -14,6 +15,9 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include "NumericPrimitives.h"
 
 namespace root_ext {
+
+using ::analysis::operator<<;
+using ::analysis::operator>>;
 
 template<typename T, size_t n_dim, bool positively_defined = false>
 struct Point;
@@ -28,19 +32,31 @@ struct Point<T, 1, positively_defined> {
             throw analysis::exception("Invalid point %1%.") % x;
     }
 
+    bool operator ==(const Point<T, 1, positively_defined>& other) const
+    {
+        return x() == other.x();
+    }
+    bool operator !=(const Point<T, 1, positively_defined>& other) const { return !(*this == other); }
+
     const T& x() const { return _x; }
     operator T() const { return _x; }
-    Point<T, 1, positively_defined> operator+(const Point<T, 1, positively_defined>& other) const
+
+    template<bool pos_def>
+    Point<T, 1, positively_defined && pos_def> operator+(const Point<T, 1, pos_def>& other) const
     {
-        return Point<T, 1, positively_defined>(x() + other.x());
+        return Point<T, 1, positively_defined && pos_def>(x() + other.x());
     }
-    Point<T, 1, positively_defined> operator-(const Point<T, 1, positively_defined>& other) const
+
+    template<bool pos_def>
+    Point<T, 1, positively_defined && pos_def> operator-(const Point<T, 1, pos_def>& other) const
     {
-        return Point<T, 1, positively_defined>(x() - other.x());
+        return Point<T, 1, positively_defined && pos_def>(x() - other.x());
     }
-    Point<T, 1, positively_defined> operator*(const Point<T, 1, positively_defined>& other) const
+
+    template<bool pos_def>
+    Point<T, 1, positively_defined && pos_def> operator*(const Point<T, 1, pos_def>& other) const
     {
-        return Point<T, 1, positively_defined>(x() * other.x());
+        return Point<T, 1, positively_defined && pos_def>(x() * other.x());
     }
 
     static bool IsValid(const T& x) { return !positively_defined || x >= 0; }
@@ -59,6 +75,8 @@ private:
 
 template<typename T, bool positively_defined>
 struct Point<T, 2, positively_defined> {
+    static const std::string& separator() { static const std::string sep = ","; return sep; }
+
     Point() : _x(0), _y(0) {}
     Point(const T& x, const T& y)
         : _x(x), _y(y)
@@ -67,31 +85,43 @@ struct Point<T, 2, positively_defined> {
             throw analysis::exception("Invalid point (%1%, %2%).") % x % y;
     }
 
+    bool operator ==(const Point<T, 2, positively_defined>& other) const
+    {
+        return x() == other.x() && y() == other.y();
+    }
+    bool operator !=(const Point<T, 2, positively_defined>& other) const { return !(*this == other); }
+
     const T& x() const { return _x; }
     const T& y() const { return _y; }
-    Point<T, 2, positively_defined> operator+(const Point<T, 2, positively_defined>& other) const
+
+    template<bool pos_def>
+    Point<T, 2, positively_defined && pos_def> operator+(const Point<T, 2, pos_def>& other) const
     {
-        return Point<T, 2, positively_defined>(x() + other.x(), y() + other.y());
-    }
-    Point<T, 2, positively_defined> operator-(const Point<T, 2, positively_defined>& other) const
-    {
-        return Point<T, 2, positively_defined>(x() - other.x(), y() - other.y());
-    }
-    Point<T, 2, positively_defined> operator*(const Point<T, 2, positively_defined>& other) const
-    {
-        return Point<T, 2, positively_defined>(x() * other.x(), y() * other.y());
+        return Point<T, 2, positively_defined && pos_def>(x() + other.x(), y() + other.y());
     }
 
-    Point<T, 2, positively_defined> flip_x() const { return Point<T, 2, positively_defined>(-x(), y()); }
-    Point<T, 2, positively_defined> flip_y() const { return Point<T, 2, positively_defined>(x(), -y()); }
+    template<bool pos_def>
+    Point<T, 2, positively_defined && pos_def> operator-(const Point<T, 2, pos_def>& other) const
+    {
+        return Point<T, 2, positively_defined && pos_def>(x() - other.x(), y() - other.y());
+    }
+
+    template<bool pos_def>
+    Point<T, 2, positively_defined && pos_def> operator*(const Point<T, 2, pos_def>& other) const
+    {
+        return Point<T, 2, positively_defined && pos_def>(x() * other.x(), y() * other.y());
+    }
+
+    Point<T, 2, false> flip_x() const { return Point<T, 2, false>(-x(), y()); }
+    Point<T, 2, false> flip_y() const { return Point<T, 2, false>(x(), -y()); }
 
     static bool IsValid(const T& x, const T& y) { return !positively_defined || (x >= 0 && y >= 0); }
 
-    std::string ToString() const { return analysis::ToString(x()) + ',' + analysis::ToString(y()); }
+    std::string ToString() const { return analysis::ToString(x()) + separator() + analysis::ToString(y()); }
 
     static Point<T, 2, positively_defined> Parse(const std::string& str)
     {
-        const auto coord_list = analysis::SplitValueList(str, true, ",", false);
+        const auto coord_list = analysis::SplitValueList(str, true, separator(), false);
         if(coord_list.size() != 2) throw analysis::exception("Invalid 2D point '%1%'.") % str;
         const auto x = analysis::Parse<T>(coord_list.at(0));
         const auto y = analysis::Parse<T>(coord_list.at(1));
@@ -100,6 +130,40 @@ struct Point<T, 2, positively_defined> {
 
 private:
     T _x, _y;
+};
+
+template<>
+struct Point<bool, 2, false> {
+    static const std::string& separator() { static const std::string sep = ","; return sep; }
+
+    Point() : _x(false), _y(false) {}
+    Point(bool x, bool y) : _x(x), _y(y) {}
+
+    bool operator ==(const Point<bool, 2, false>& other) const
+    {
+        return x() == other.x() && y() == other.y();
+    }
+    bool operator !=(const Point<bool, 2, false>& other) const { return !(*this == other); }
+
+    const bool& x() const { return _x; }
+    const bool& y() const { return _y; }
+
+    Point<bool, 2, false> flip_x() const { return Point<bool, 2, false>(!x(), y()); }
+    Point<bool, 2, false> flip_y() const { return Point<bool, 2, false>(x(), !y()); }
+
+    std::string ToString() const { return analysis::ToString(x()) + separator() + analysis::ToString(y()); }
+
+    static Point<bool, 2, false> Parse(const std::string& str)
+    {
+        const auto coord_list = analysis::SplitValueList(str, true, separator(), false);
+        if(coord_list.size() != 2) throw analysis::exception("Invalid 2D point '%1%'.") % str;
+        const auto x = analysis::Parse<bool>(coord_list.at(0));
+        const auto y = analysis::Parse<bool>(coord_list.at(1));
+        return Point<bool, 2, false>(x, y);
+    }
+
+private:
+    bool _x, _y;
 };
 
 template<typename T, size_t n_dim>
@@ -124,6 +188,8 @@ std::istream& operator>>(std::istream& s, Point<T, n_dim, positively_defined>& p
 template<typename T>
 struct Box {
     using Position = Point<T, 2>;
+    static const std::string& separator() { return Position::separator(); }
+
     Box() {}
 
     Box(const Position& left_bottom, const Position& right_top) : _left_bottom(left_bottom), _right_top(right_top)
@@ -136,6 +202,12 @@ struct Box {
     {
         CheckValidity();
     }
+
+    bool operator ==(const Box<T>& other) const
+    {
+        return left_bottom() == other.left_bottom() && right_top() == other.right_top();
+    }
+    bool operator !=(const Box<T>& other) const { return !(*this == other); }
 
     const Position& left_bottom() const { return _left_bottom; }
     const Position& right_top() const { return _right_top; }
@@ -169,25 +241,29 @@ private:
 template<typename T>
 std::ostream& operator<<(std::ostream& s, const Box<T>& b)
 {
-    s << b.left_bottom() << " " << b.right_top();
+    s << b.left_bottom() << Box<T>::separator() << b.right_top();
     return s;
 }
 
 template<typename T>
 std::istream& operator>>(std::istream& s, Box<T>& b)
 {
-    typename Box<T>::Position left_bottom, right_top;
-    try {
-        s >> left_bottom >> right_top;
-    }catch(analysis::exception&) {
+    std::string str;
+    s >> str;
+    const auto v_list = analysis::SplitValueList(str, true, Box<T>::separator(), false);
+    if(v_list.size() != 4)
         throw analysis::exception("Invalid box.");
-    }
-    b = Box<T>(left_bottom, right_top);
+    const T left_bottom_x = analysis::Parse<T>(v_list.at(0));
+    const T left_bottom_y = analysis::Parse<T>(v_list.at(1));
+    const T right_top_x = analysis::Parse<T>(v_list.at(2));
+    const T right_top_y = analysis::Parse<T>(v_list.at(3));
+    b = Box<T>(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     return s;
 }
 
 template<typename T>
 struct MarginBox {
+    static const std::string& separator() { return Box<T>::separator(); }
     MarginBox() : _left(0), _bottom(0), _right(0), _top(0) {}
 
     MarginBox(const T& left, const T& bottom, const T& right, const T& top)
@@ -224,7 +300,8 @@ private:
 template<typename T>
 std::ostream& operator<<(std::ostream& s, const MarginBox<T>& b)
 {
-    s << boost::format("%1%,%2%,%3%,%4%") % b.left() % b.bottom() % b.right() % b.top();
+    const auto& sep = MarginBox<T>::separator();
+    s <<  b.left() << sep << b.bottom() << sep << b.right() << sep << b.top();
     return s;
 }
 
@@ -233,7 +310,7 @@ std::istream& operator>>(std::istream& s, MarginBox<T>& b)
 {
     std::string str;
     s >> str;
-    const auto v_list = analysis::SplitValueList(str, true, ",", false);
+    const auto v_list = analysis::SplitValueList(str, true, MarginBox<T>::separator(), false);
     if(v_list.size() != 4)
         throw analysis::exception("Invalid margin box.");
     const T left = analysis::Parse<T>(v_list.at(0));
@@ -371,6 +448,11 @@ public:
         if(IsSimple())
             return detail::ReferenceColorCollection::ToString(GetColorId());
         return GetTColor().AsHexString();
+    }
+
+    Color CreateTransparentCopy(float alpha) const
+    {
+        return Color(TColor::GetColorTransparent(GetColorId(), alpha));
     }
 
 private:

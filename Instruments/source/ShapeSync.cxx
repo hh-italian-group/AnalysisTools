@@ -13,6 +13,8 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include "AnalysisTools/Core/include/AnalysisMath.h"
 #include "AnalysisTools/Core/include/PropertyConfigReader.h"
 #include "AnalysisTools/Print/include/PlotPrimitives.h"
+#include "AnalysisTools/Print/include/DrawOptions.h"
+#include "AnalysisTools/Print/include/RootPrintTools.h"
 
 namespace analysis {
 struct Arguments {
@@ -126,53 +128,19 @@ private:
     }
 };
 
-struct DrawOptions {
-    using ItemCollection = PropertyConfigReader::ItemCollection;
-    using Size = root_ext::Size<double, 2>;
-    using Point = root_ext::Point<float, 2, false>;
-    using MarginBox = root_ext::MarginBox<float>;
-
-    std::string x_title, y_title;
-    bool divide_by_bin_width{false};
-    Size canvas_size{600, 600};
-    MarginBox margins{.1f, .1f, .1f, .1f};
-    Point axes_title_offsets{1.f, 1.f};
-    double zero_threshold{-std::numeric_limits<double>::infinity()};
-    float y_ratio_label_size{.04f};
-    double y_min_sf{1}, y_max_sf{1.2};
-    double max_ratio{-1}, allowed_ratio_margin{0.2};
-
-    DrawOptions(const ItemCollection& config_items)
-    {
-        static const std::string item_name = "draw_opt";
-        if(!config_items.count(item_name))
-            throw exception("Draw options not found.");
-        const auto& opt = config_items.at(item_name);
-        opt.Read("x_title", x_title);
-        opt.Read("y_title", y_title);
-        opt.Read("div_bw", divide_by_bin_width);
-        opt.Read("canvas_size", canvas_size);
-        opt.Read("margins", margins);
-        opt.Read("axes_title_offsets", axes_title_offsets);
-        opt.Read("zero_threshold", zero_threshold);
-        opt.Read("y_ratio_label_size", y_ratio_label_size);
-        opt.Read("y_min_sf", y_max_sf);
-        opt.Read("y_max_sf", y_max_sf);
-        opt.Read("max_ratio", max_ratio);
-        opt.Read("allowed_ratio_margin", allowed_ratio_margin);
-    }
-};
-
 class ShapeSync {
 public:
     using InputDesc = PropertyConfigReader::Item;
     using NameSet = std::set<std::string>;
     using SampleItemNamesMap = std::map<std::string, NameSet>;
     using HistPtr = Source::HistPtr;
+    using DrawOptions = ::root_ext::draw_options::Page;
 
     ShapeSync(const Arguments& _args) :
         args(_args)
     {
+        static const std::string draw_opt_item_name = "draw_opt";
+
         gROOT->SetBatch(true);
         gROOT->SetMustClean(true);
 
@@ -181,7 +149,11 @@ public:
         if(args.input().size() < 2)
             throw exception("At least 2 inputs should be provided.");
         patterns = std::make_shared<InputPattern>(config.GetItems());
-        draw_options = std::make_shared<DrawOptions>(config.GetItems());
+
+        if(!config.GetItems().count(draw_opt_item_name))
+            throw analysis::exception("Draw options not found.");
+        draw_options = std::make_shared<DrawOptions>(config.GetItems().at(draw_opt_item_name));
+
         for(size_t n = 0; n < args.input().size(); ++n)
             inputs.emplace_back(n, args.input(), config.GetItems(), *patterns);
         canvas = std::make_shared<TCanvas>("canvas", "", draw_options->canvas_size.x(),
@@ -290,14 +262,13 @@ private:
         auto input = inputs.begin();
         auto hist = input->histograms.at(dir_name).at(hist_name);
         std::map<std::string, PhysicalValue> integrals;
-        double y_min = std::numeric_limits<double>::infinity();
-        double y_max = -std::numeric_limits<double>::infinity();
+        root_ext::PlotRangeTuner rangeTuner;
 
         hist->SetTitle(title.c_str());
         hist->GetXaxis()->SetTitle(draw_options->x_title.c_str());
         hist->GetYaxis()->SetTitle(draw_options->y_title.c_str());
-        hist->GetXaxis()->SetTitleOffset(draw_options->axes_title_offsets.x());
-        hist->GetYaxis()->SetTitleOffset(draw_options->axes_title_offsets.y());
+        hist->GetXaxis()->SetTitleOffset(draw_options->axis_title_offsets.x());
+        hist->GetYaxis()->SetTitleOffset(draw_options->axis_title_offsets.y());
         hist->SetStats(0);
 
         for(; input != inputs.end(); ++input) {
@@ -308,7 +279,7 @@ private:
             if(draw_options->divide_by_bin_width)
                 root_ext::DivideByBinWidth(*hist);
             hist->SetMarkerStyle(kDot);
-            UpdateYRange(hist, y_min, y_max);
+            rangeTuner.Add(*hist, false, true);
         }
 
         input = inputs.begin();
@@ -323,13 +294,12 @@ private:
         }
         ratio_plot->SetH1DrawOpt("");
         ratio_plot->SetH2DrawOpt("");
-        ratio_plot->SetLeftMargin(draw_options->margins.left());
-        ratio_plot->SetRightMargin(draw_options->margins.right());
-        ratio_plot->SetUpTopMargin(draw_options->margins.top());
-        ratio_plot->SetLowBottomMargin(draw_options->margins.bottom());
+        root_ext::plotting::SetMargins(*ratio_plot, draw_options->margins);
         ratio_plot->Draw();
-        ratio_plot->GetLowerRefYaxis()->SetLabelSize(draw_options->y_ratio_label_size);
-        ratio_plot->GetUpperRefYaxis()->SetRangeUser(y_min * draw_options->y_min_sf, y_max * draw_options->y_max_sf);
+        ratio_plot->GetLowerRefYaxis()->SetLabelSize(draw_options->ratio_y_label_size);
+        rangeTuner.SetRangeY(*ratio_plot->GetUpperRefYaxis(), draw_options->log_y, draw_options->y_max_sf,
+                             draw_options->y_min_sf, draw_options->y_min_log);
+        ratio_plot->GetUpperPad()->SetLogy(draw_options->log_y);
         if(draw_options->max_ratio > 0)
             ratio_plot->GetLowerRefYaxis()->SetRangeUser(std::max(0., 2 - draw_options->max_ratio),
                                                          draw_options->max_ratio);
@@ -358,16 +328,6 @@ private:
         canvas->Update();
 
         PrintCanvas(title, is_last);
-    }
-
-    static void UpdateYRange(HistPtr hist, double& y_min, double& y_max)
-    {
-        const auto min_bin = hist->GetMinimumBin();
-        const double hist_min = hist->GetBinContent(min_bin) - hist->GetBinErrorLow(min_bin);
-        y_min = std::min(0., std::min(hist_min, y_min));
-        const auto max_bin = hist->GetMaximumBin();
-        const double hist_max = hist->GetBinContent(max_bin) + hist->GetBinErrorUp(max_bin);
-        y_max = std::max(hist_max, y_max);
     }
 
 private:

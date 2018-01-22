@@ -14,6 +14,8 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TCanvas.h>
 #include <TLegend.h>
 #include <TColor.h>
+#include <TRatioPlot.h>
+#include <TGraphAsymmErrors.h>
 
 #include "AnalysisTools/Core/include/RootExt.h"
 #include "AnalysisTools/Core/include/NumericPrimitives.h"
@@ -21,225 +23,309 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 namespace root_ext {
 
-inline int CreateTransparentColor(int color, float alpha)
-{
-  TColor* adapt = gROOT->GetColor(color);
-  int new_idx = gROOT->GetListOfColors()->GetSize() + 1;
-  TColor* trans = new TColor(new_idx, adapt->GetRed(), adapt->GetGreen(),
-                             adapt->GetBlue(), "", alpha);
-  trans->SetName(Form("userColor%i", new_idx));
-  return new_idx;
-}
-
-template<typename Histogram, typename ValueType=Double_t>
-class HistogramFitter {
+class PlotRangeTuner {
 public:
-    using Range = ::analysis::Range<ValueType>;
+    using ValueType = double;
+    using Hist = TH1;
+    using Graph = TGraphAsymmErrors;
 
-    static ValueType FindMinLimitX(const Histogram& h)
+    static ValueType FindMinLimitX(const Hist& h, bool /*consired_errors*/)
     {
-        for(Int_t i = 0; i < h.GetNbinsX(); ++i) {
+        for(Int_t i = 1; i <= h.GetNbinsX(); ++i) {
             if(h.GetBinContent(i) != ValueType(0))
                 return h.GetBinLowEdge(i);
         }
         return std::numeric_limits<ValueType>::max();
     }
 
-    static ValueType FindMaxLimitX(const Histogram& h)
+    static ValueType FindMaxLimitX(const Hist& h, bool /*consired_errors*/)
     {
-        for(Int_t i = h.GetNbinsX() - 1; i > 0; --i) {
+        for(Int_t i = h.GetNbinsX(); i > 0; --i) {
             if(h.GetBinContent(i) != ValueType(0))
                 return h.GetBinLowEdge(i) + h.GetBinWidth(i);
         }
         return std::numeric_limits<ValueType>::lowest();
     }
 
-    static ValueType FindMinLimitY(const Histogram& h)
+    static ValueType FindMinLimitY(const Hist& h, bool consired_errors)
     {
         ValueType min = std::numeric_limits<ValueType>::max();
-        for(Int_t i = 0; i <= h.GetNbinsX() + 1; ++i) {
-            if(h.GetBinContent(i) != ValueType(0))
-                min = std::min(min, h.GetBinContent(i));
+        for(int i = 1; i <= h.GetNbinsX(); ++i) {
+            if(h.GetBinContent(i) != ValueType(0)) {
+                ValueType v = h.GetBinContent(i);
+                if(consired_errors)
+                    v -= h.GetBinErrorLow(i);
+                min = std::min(min, v);
+            }
         }
         return min;
     }
 
-    static ValueType FindMaxLimitY(const Histogram& h)
+    static ValueType FindMaxLimitY(const Hist& h, bool consired_errors)
     {
         ValueType max = std::numeric_limits<ValueType>::lowest();
-        for(Int_t i = 0; i <= h.GetNbinsX() + 1; ++i) {
-            if(h.GetBinContent(i) != ValueType(0))
-                max = std::max(max, h.GetBinContent(i));
+        for(int i = 1; i <= h.GetNbinsX(); ++i) {
+            if(h.GetBinContent(i) != ValueType(0)) {
+                ValueType v = h.GetBinContent(i);
+                if(consired_errors)
+                    v += h.GetBinErrorUp(i);
+                max = std::max(max, v);
+            }
         }
         return max;
     }
 
-
-    template<typename Container>
-    static void SetRanges(const Container& hists, bool fitX, bool fitY, Range xRange, Range yRange, bool isLogY)
+    static ValueType FindMinLimitX(const Graph& g, bool consired_errors)
     {
-        if(!hists.size())
-            return;
+        ValueType min = std::numeric_limits<ValueType>::max();
+        for(int i = 0; i < g.GetN(); ++i) {
+            ValueType v = g.GetX()[i];
+            if(consired_errors)
+                v -= g.GetEXlow()[i];
+            min = std::min(min, v);
+        }
+        return min;
+    }
 
-        if(fitX) {
-            ValueType min = std::numeric_limits<ValueType>::max();
-            ValueType max = std::numeric_limits<ValueType>::lowest();
-            for(auto h : hists) {
-                if(!h) continue;
-                min = std::min(min, FindMinLimitX(*h));
-                max = std::max(max, FindMaxLimitX(*h));
-            }
-            xRange = Range(min, max);
+    static ValueType FindMaxLimitX(const Graph& g, bool consired_errors)
+    {
+        ValueType max = std::numeric_limits<ValueType>::lowest();
+        for(int i = 0; i < g.GetN(); ++i) {
+            ValueType v = g.GetX()[i];
+            if(consired_errors)
+                v += g.GetEXhigh()[i];
+            max = std::max(max, v);
+        }
+        return max;
+    }
+
+    static ValueType FindMinLimitY(const Graph& g, bool consired_errors)
+    {
+        ValueType min = std::numeric_limits<ValueType>::max();
+        for(int i = 0; i < g.GetN(); ++i) {
+            ValueType v = g.GetY()[i];
+            if(consired_errors)
+                v -= g.GetEYlow()[i];
+            min = std::min(min, v);
+        }
+        return min;
+    }
+
+    static ValueType FindMaxLimitY(const Graph& g, bool consired_errors)
+    {
+        ValueType max = std::numeric_limits<ValueType>::lowest();
+        for(int i = 0; i < g.GetN(); ++i) {
+            ValueType v = g.GetY()[i];
+            if(consired_errors)
+                v += g.GetEYhigh()[i];
+            max = std::max(max, v);
+        }
+        return max;
+    }
+
+    template<typename Item>
+    void Add(const Item& item, bool scan_x, bool consider_errors)
+    {
+        if(scan_x) {
+            x_min = std::min(x_min, PlotRangeTuner::FindMinLimitX(item, consider_errors));
+            x_max = std::max(x_max, PlotRangeTuner::FindMaxLimitX(item, consider_errors));
+        } else {
+            UpdateLimitsX(item);
         }
 
-        if(fitY) {
-            ValueType min = std::numeric_limits<ValueType>::max();
-            ValueType max = std::numeric_limits<ValueType>::lowest();
-            for(auto h : hists) {
-                if(!h) continue;
-                min = std::min(min, FindMinLimitY(*h));
-                max = std::max(max, FindMaxLimitY(*h));
-            }
-            const double factor = isLogY ? 2.0 : 1.1;
-            min /= factor;
-            max *= factor;
-            if(isLogY) {
-                min = std::max(min, std::numeric_limits<ValueType>::min());
-                max = std::max(max, std::numeric_limits<ValueType>::min());
-            }
-            yRange = Range(min, max);
-        }
+        y_min = std::min(y_min, PlotRangeTuner::FindMinLimitY(item, consider_errors));
+        y_max = std::max(y_max, PlotRangeTuner::FindMaxLimitY(item, consider_errors));
+    }
 
-        for(auto h : hists) {
-            if(!h) continue;
-            h->SetAxisRange(xRange.min(), xRange.max(), "X");
-            h->SetAxisRange(yRange.min(), yRange.max(), "Y");
-        }
+    ValueType GetYMinValue(bool log_y, ValueType min_y_sf, ValueType y_min_log) const
+    {
+        const ValueType y_min_value = y_min == std::numeric_limits<ValueType>::max()
+                || y_min == -std::numeric_limits<ValueType>::infinity() ? 0 : y_min;
+        return log_y ? std::max(y_min_value * min_y_sf, y_min_log) : y_min_value * min_y_sf;
+    }
+
+    ValueType GetYMaxValue(ValueType max_y_sf, ValueType y_min_value) const
+    {
+        const ValueType y_max_value = y_max * max_y_sf;
+        return y_max_value <= y_min_value || y_max_value == std::numeric_limits<ValueType>::infinity()
+                ? y_min_value + 1 : y_max_value;
+    }
+
+    ValueType GetXMinValue() const
+    {
+        return x_min == std::numeric_limits<ValueType>::max() || x_min == -std::numeric_limits<ValueType>::infinity()
+                ? 0 : x_min;
+    }
+
+    ValueType GetXMaxValue() const
+    {
+        return x_max == std::numeric_limits<ValueType>::lowest() || x_max == GetXMinValue()
+                || x_max == std::numeric_limits<ValueType>::infinity() ? GetXMinValue() + 1 : x_max;
+    }
+
+    TH1F* DrawFrame(TPad& pad, bool log_y, ValueType max_y_sf, ValueType min_y_sf, ValueType y_min_log) const
+    {
+        const ValueType y_min_value = GetYMinValue(log_y, min_y_sf, y_min_log);
+        return pad.DrawFrame(GetXMinValue(), y_min_value, GetXMaxValue(), GetYMaxValue(max_y_sf, y_min_value));
+    }
+
+    void SetRangeX(TAxis& x_axis) const
+    {
+        x_axis.SetRangeUser(GetXMinValue(), GetXMaxValue());
+    }
+
+    void SetRangeY(TAxis& y_axis, bool log_y, ValueType max_y_sf, ValueType min_y_sf, ValueType y_min_log) const
+    {
+        const ValueType y_min_value = GetYMinValue(log_y, min_y_sf, y_min_log);
+        y_axis.SetRangeUser(y_min_value, GetYMaxValue(max_y_sf, y_min_value));
+    }
+
+    template<typename Item>
+    void SetItemRangeY(Item& ref_item, bool log_y, ValueType max_y_sf, ValueType min_y_sf, ValueType y_min_log) const
+    {
+        const ValueType y_min_value = GetYMinValue(log_y, min_y_sf, y_min_log);
+        ref_item.SetMinimum(y_min_value);
+        ref_item.SetMaximum(GetYMaxValue(max_y_sf, y_min_value));
     }
 
 private:
-    HistogramFitter() {}
+    void UpdateLimitsX(const Hist& h)
+    {
+        const ValueType h_x_min = h.GetBinLowEdge(1);
+        const ValueType h_x_max = h.GetBinLowEdge(h.GetNbinsX()) + h.GetBinWidth(h.GetNbinsX());
+        x_min = std::min(x_min, h_x_min);
+        x_max = std::max(x_max, h_x_max);
+    }
+
+    void UpdateLimitsX(const Graph& g)
+    {
+        const ValueType g_x_min = FindMinLimitX(g, true);
+        const ValueType g_x_max = FindMaxLimitX(g, true);
+        x_min = std::min(x_min, g_x_min);
+        x_max = std::max(x_max, g_x_max);
+    }
+
+public:
+    ValueType x_min{std::numeric_limits<ValueType>::max()};
+    ValueType x_max{std::numeric_limits<ValueType>::lowest()};
+    ValueType y_min{std::numeric_limits<ValueType>::max()};
+    ValueType y_max{std::numeric_limits<ValueType>::lowest()};
 };
 
-class Adapter {
-public:
-    static TPaveLabel* NewPaveLabel(const Box<double>& box, const std::string& text)
-    {
-        return new TPaveLabel(box.left_bottom().x(), box.left_bottom().y(), box.right_top().x(), box.right_top().y(),
-                              text.c_str());
+namespace plotting {
+template<typename T>
+std::shared_ptr<TPaveLabel> NewPaveLabel(const Box<T>& box, const std::string& text)
+{
+    return std::make_shared<TPaveLabel>(box.left_bottom().x(), box.left_bottom().y(),
+                                        box.right_top().x(), box.right_top().y(), text.c_str());
+}
+
+template<typename T>
+std::shared_ptr<TPad> NewPad(const Box<T>& box)
+{
+    static const char* pad_name = "pad";
+    return std::make_shared<TPad>(pad_name, pad_name, box.left_bottom().x(), box.left_bottom().y(),
+                                  box.right_top().x(), box.right_top().y());
+}
+
+template<typename T>
+std::shared_ptr<TCanvas> NewCanvas(const Size<T, 2>& size)
+{
+    static const char* canvas_name = "canvas";
+    return std::make_shared<TCanvas>(canvas_name, canvas_name, size.x(), size.y());
+}
+
+template<typename T>
+void SetMargins(TPad& pad, const MarginBox<T>& box, TPad* ratio_pad = nullptr, float ratio_pad_y_size_sf = 1.f,
+                float main_ratio_margin = .02f)
+{
+    pad.SetLeftMargin(box.left());
+    pad.SetRightMargin(box.right());
+    pad.SetTopMargin(box.top());
+
+    if(ratio_pad) {
+        ratio_pad->SetLeftMargin(box.left());
+        ratio_pad->SetRightMargin(box.right());
+        ratio_pad->SetBottomMargin(box.bottom() * ratio_pad_y_size_sf);
+        ratio_pad->SetTopMargin(main_ratio_margin / 2 * ratio_pad_y_size_sf);
+        pad.SetBottomMargin(main_ratio_margin / 2);
+    } else {
+        pad.SetBottomMargin(box.bottom());
     }
+}
 
-    static TPad* NewPad(const Box<double>& box)
-    {
-        static const char* pad_name = "pad";
-        return new TPad(pad_name, pad_name, box.left_bottom().x(), box.left_bottom().y(), box.right_top().x(),
-                        box.right_top().y());
-    }
+template<typename T>
+void SetMargins(TRatioPlot& plot, const MarginBox<T>& box)
+{
+    plot.SetLeftMargin(box.left());
+    plot.SetLowBottomMargin(box.bottom());
+    plot.SetRightMargin(box.right());
+    plot.SetUpTopMargin(box.top());
+}
 
-private:
-    Adapter() {}
-};
-
-template<typename Histogram, typename ValueType=Double_t>
-class HistogramPlotter {
-public:
-    struct Options {
-        Color_t color;
-        Width_t line_width;
-        Box<double> pave_stats_box;
-        Double_t pave_stats_text_size;
-        Color_t fit_color;
-        Width_t fit_line_width;
-        Options() : color(kBlack), line_width(1), pave_stats_text_size(0), fit_color(kBlack), fit_line_width(1) {}
-        Options(Color_t _color, Width_t _line_width, const Box<double>& _pave_stats_box, Double_t _pave_stats_text_size,
-            Color_t _fit_color, Width_t _fit_line_width)
-            : color(_color), line_width(_line_width), pave_stats_box(_pave_stats_box),
-              pave_stats_text_size(_pave_stats_text_size), fit_color(_fit_color), fit_line_width(_fit_line_width) {}
-    };
-
-    struct Entry {
-        Histogram* histogram;
-        Options plot_options;
-        Entry(Histogram* _histogram, const Options& _plot_options)
-            : histogram(_histogram), plot_options(_plot_options) {}
-    };
-
-    using HistogramContainer = std::vector<Histogram*>;
-
-public:
-    HistogramPlotter(const std::string& _title, const std::string& _axis_titleX, const std::string& _axis_titleY)
-        : title(_title), axis_titleX(_axis_titleX),axis_titleY(_axis_titleY) {}
-
-    void Add(Histogram* histogram, const Options& plot_options)
-    {
-        histograms.push_back(histogram);
-        options.push_back(plot_options);
-    }
-
-    void Add(const Entry& entry)
-    {
-        histograms.push_back(entry.histogram);
-        options.push_back(entry.plot_options);
-    }
-
-    void Superpose(TPad* main_pad, TPad* stat_pad, bool draw_legend, const Box<double>& legend_box,
-                   const std::string& draw_options)
-    {
-        if(!histograms.size() || !main_pad)
-            return;
-
-        histograms[0]->SetTitle(title.c_str());
-        histograms[0]->GetXaxis()->SetTitle(axis_titleX.c_str());
-        histograms[0]->GetYaxis()->SetTitle(axis_titleY.c_str());
-
-        TLegend* legend = 0;
-        if(draw_legend) {
-            legend = new TLegend(legend_box.left_bottom().x(), legend_box.left_bottom().y(),
-                                 legend_box.right_top().x(), legend_box.right_top().y());
+template<typename Range = ::analysis::Range<double>>
+std::shared_ptr<TGraphAsymmErrors> HistogramToGraph(const TH1& hist, bool divide_by_bin_width = false,
+                                                    const ::analysis::MultiRange<Range>& blind_ranges = {})
+{
+    std::vector<double> x, y, exl, exh, eyl, eyh;
+    size_t n = 0;
+    for(int bin = 1; bin <= hist.GetNbinsX(); ++bin) {
+        const Range bin_range(hist.GetBinLowEdge(bin), hist.GetBinLowEdge(bin + 1),
+                              ::analysis::RangeBoundaries::MinIncluded);
+        if(blind_ranges.Overlaps(bin_range))
+            continue;
+        x.push_back(hist.GetBinCenter(bin));
+        exl.push_back(x[n] - hist.GetBinLowEdge(bin));
+        exh.push_back(hist.GetBinLowEdge(bin + 1) - x[n]);
+        y.push_back(hist.GetBinContent(bin));
+        eyl.push_back(hist.GetBinErrorLow(bin));
+        eyh.push_back(hist.GetBinErrorUp(bin));
+        if(divide_by_bin_width) {
+            const double bin_width = hist.GetBinWidth(bin);
+            y[n] /= bin_width;
+            eyl[n] /= bin_width;
+            eyh[n] /= bin_width;
         }
-
-        for(unsigned n = 0; n < histograms.size(); ++n) {
-            main_pad->cd();
-            const Options& o = options[n];
-            Histogram* h = histograms[n];
-            if(!h)
-                continue;
-
-            const char* opt = n ? "sames" : draw_options.c_str();
-            h->Draw(opt);
-            if(legend) {
-                legend->AddEntry(h, h->GetName());
-                legend->Draw();
-            }
-
-            main_pad->Update();
-            if(!stat_pad)
-                continue;
-            stat_pad->cd();
-            TPaveStats *pave_stats = dynamic_cast<TPaveStats*>(h->GetListOfFunctions()->FindObject("stats"));
-
-            TPaveStats *pave_stats_copy = root_ext::CloneObject(*pave_stats);
-            h->SetStats(0);
-
-            pave_stats_copy->SetX1NDC(o.pave_stats_box.left_bottom().x());
-            pave_stats_copy->SetX2NDC(o.pave_stats_box.right_top().x());
-            pave_stats_copy->SetY1NDC(o.pave_stats_box.left_bottom().y());
-            pave_stats_copy->SetY2NDC(o.pave_stats_box.right_top().y());
-            pave_stats_copy->ResetAttText();
-            pave_stats_copy->SetTextColor(o.color);
-            pave_stats_copy->SetTextSize(static_cast<float>(o.pave_stats_text_size));
-            pave_stats_copy->Draw();
-            stat_pad->Update();
-        }
+        ++n;
     }
+    return std::make_shared<TGraphAsymmErrors>(static_cast<int>(n), x.data(), y.data(), exl.data(), exh.data(),
+                                               eyl.data(), eyh.data());
+}
 
-    const HistogramContainer& Histograms() const { return histograms; }
+template<typename Hist>
+std::shared_ptr<TGraphAsymmErrors> CreateRatioGraph(const TGraphAsymmErrors& graph, const Hist& hist)
+{
+    auto ratio_graph = std::make_shared<TGraphAsymmErrors>(graph);
+    for(int i = 0; i < graph.GetN(); ++i) {
+        const double x = graph.GetX()[i];
+        const double y = graph.GetY()[i];
+        const double ey_low = graph.GetEYlow()[i];
+        const double ey_high = graph.GetEYhigh()[i];
+        const int bin = hist.FindFixBin(x);
+        const double hist_y = hist.GetBinContent(bin);
+        ratio_graph->GetY()[i] = y / hist_y;
+        ratio_graph->GetEYlow()[i] = ey_low / hist_y;
+        ratio_graph->GetEYhigh()[i] = ey_high / hist_y;
+    }
+    return ratio_graph;
+}
 
-private:
-    HistogramContainer histograms;
-    std::vector<Options> options;
-    std::string title;
-    std::string axis_titleX, axis_titleY;
-};
+template<typename Hist>
+std::shared_ptr<Hist> CreateNormalizedUncertaintyHistogram(const Hist& hist)
+{
+    auto norm_hist = std::make_shared<Hist>(hist);
+    for(int i = 1; i <= hist.GetNbinsX(); ++i) {
+        const double y = hist.GetBinContent(i);
+        const double ey = hist.GetBinError(i);
+        norm_hist->SetBinContent(i, 1.);
+        if(ey == 0 && y == 0)
+            norm_hist->SetBinError(i, 0);
+        else
+            norm_hist->SetBinError(i, ey / y);
+    }
+    return norm_hist;
+}
 
+
+} // namespace plotting
 } // root_ext

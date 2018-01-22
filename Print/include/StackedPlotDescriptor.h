@@ -1,424 +1,287 @@
-/*! Code to produce stacked plots using CMS preliminary style.
+/*! Code to produce stacked plots.
 This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #pragma once
 
-#include <iostream>
-#include <iomanip>
-#include <memory>
-
-#include <TH1.h>
 #include <THStack.h>
-#include <TLine.h>
-#include <TFrame.h>
-#include <TStyle.h>
-#include <TROOT.h>
+#include "AnalysisTools/Core/include/SmartHistogram.h"
+#include "DrawOptions.h"
+#include "RootPrintTools.h"
 
-#include "RootPrintSource.h"
-#include "TdrStyle.h"
-#include "CMS_lumi.h"
-
-#include "SmartHistogram.h"
-#include "HttStyles.h"
-
-namespace analysis {
+namespace root_ext {
 
 class StackedPlotDescriptor {
 public:
-    typedef root_ext::SmartHistogram<TH1D> Histogram;
-    typedef std::shared_ptr<Histogram> hist_ptr;
-    typedef std::vector<hist_ptr> hist_ptr_vector;
+    using exception = ::analysis::exception;
+    using Hist = SmartHistogram<TH1D>;
+    using HistPtr = std::shared_ptr<Hist>;
+    using HistPtrVec = std::vector<HistPtr>;
+    using Graph = TGraphAsymmErrors;
+    using GraphPtr = std::shared_ptr<Graph>;
+    using PageOptions = draw_options::Page;
+    using HistOptions = draw_options::Histogram;
+    using MultiRange = Hist::MultiRange;
 
-    StackedPlotDescriptor(const std::string& page_title, bool draw_title, const std::string& channelNameLatex,
-                          const std::string& _categoryName, bool _draw_ratio, bool _drawBKGerrors)
-        : text(new TPaveText(0.18, 0.95, 0.65, 0.99, "NDC")), categoryText(new TPaveText(0.21, 0.71, 0.35, 0.75, "NDC")),
-          channelText(new TPaveText(0.2, 0.85, 0.25, 0.89, "NDC")), channelName(channelNameLatex),
-          categoryName(_categoryName), draw_ratio(_draw_ratio), drawBKGerrors(_drawBKGerrors)
+    StackedPlotDescriptor(const PageOptions& _page_opt, const draw_options::ItemCollection& opt_items) :
+        page_opt(_page_opt)
     {
+        auto iter = opt_items.find("sgn_hist");
+        if(iter == opt_items.end())
+            throw exception("Options to draw signal histograms not found.");
+        signal_opt = HistOptions(iter->second);
+        iter = opt_items.find("bkg_hist");
+        if(iter == opt_items.end())
+            throw exception("Options to draw background histograms not found.");
+        bkg_opt = HistOptions(iter->second);
+        iter = opt_items.find("data_hist");
+        if(iter == opt_items.end())
+            throw exception("Options to draw data histogram not found.");
+        data_opt = HistOptions(iter->second);
 
-
-        page.side.fit_range_x = false;
-        page.title = page_title;
-        page.layout.has_title = draw_title;
-        if (draw_ratio){
-            if (page.layout.has_title) {
-                page.side.layout.main_pad = root_ext::Box<double>(0.02, 0.19, 0.95, 0.94);
-                page.side.layout.ratio_pad = root_ext::Box<double>(0.02, 0.02, 0.95, 0.28);
-            } else {
-                page.side.layout.main_pad = root_ext::Box<double>(0.02, 0.21, 1, 1);
-                page.side.layout.ratio_pad = root_ext::Box<double>(0.05, 0.02, 0.97, 0.30);
-            }
+        if(bkg_opt.DrawUnc()) {
+            iter = opt_items.find(bkg_opt.unc_hist);
+            if(iter == opt_items.end())
+                throw exception("Options to draw background uncertainties not found.");
+            bkg_unc_opt = HistOptions(iter->second);
         }
-        else {
-            if (page.layout.has_title) {
-                page.side.layout.main_pad = root_ext::Box<double>(0.02,0.02,0.95,0.94);
-            } else {
-                page.side.layout.main_pad = root_ext::Box<double>(0.,0., 1, 1);
-            }
-        }
-
-        if (draw_ratio){
-            legend = std::shared_ptr<TLegend>(new TLegend (0.6, 0.64, 0.85, 0.89)); // 0.6, 0.55, 0.85, 0.90
-        }
-        else {
-            legend = std::shared_ptr<TLegend>(new TLegend (0.52, 0.60, 0.89, 0.90));
-        }
-
-        legend->SetFillColor(0);
-        legend->SetTextSize(0.026f);
-        legend->SetTextFont(42);
-        legend->SetFillStyle (0);
-        legend->SetFillColor (0);
-        legend->SetBorderSize(0);
-
-        text->SetTextSize(0.035f);
-        text->SetTextFont(62);
-        text->SetFillColor(0);
-        text->SetBorderSize(0);
-        text->SetMargin(0.01f);
-        text->SetTextAlign(12); // align left
-        std::ostringstream ss_text;
-        ss_text << "H#rightarrowhh#rightarrowbb#tau#tau " ;
-        text->AddText(0.01,0.05, ss_text.str().c_str());
-
-
-        //category
-        categoryText->SetTextSize(0.035f);
-        categoryText->SetTextFont(62);
-        categoryText->SetFillColor(0);
-        categoryText->SetBorderSize(0);
-        categoryText->SetMargin(0.01f);
-        categoryText->SetTextAlign(12); // align left
-        std::ostringstream ss_text_2;
-        ss_text_2 << channelName << ", " << categoryName;
-        categoryText->AddText(ss_text_2.str().c_str());
-
-//        channelText->SetTextSize(0.08); //0.05
-//        channelText->SetTextFont(62);
-//        channelText->SetFillColor(0);
-//        channelText->SetBorderSize(0);
-//        channelText->SetMargin(0.01);
-//        channelText->SetTextAlign(12); // align left
-//        channelText->SetX1(0.21);
-//        channelText->SetY1(0.82);
-//        channelText->AddText(channelName.c_str());
     }
 
-    const std::string& GetTitle() const { return page.title; }
-
-    void AddBackgroundHistogram(const Histogram& original_histogram, const std::string& legend_title,
-                                const root_ext::Color& color)
+    void AddSignalHistogram(const Hist& original_hist, const std::string& legend_title, const Color& color,
+                            double scale_factor)
     {
-        hist_ptr histogram = PrepareHistogram(original_histogram);
-        histogram->SetFillColor(static_cast<Color_t>(color.GetColorId()));
-        histogram->SetFillStyle(1001);
-        histogram->SetLegendTitle(legend_title);
-        background_histograms.push_back(histogram);
-        //stack->Add(histogram.get());
+        auto hist = PrepareHistogram(original_hist, signal_opt, legend_title, color, signal_opt.fill_color, false,
+                                     scale_factor);
+        signals.push_back(hist);
+    }
 
-        if(!sum_backgound_histogram){
-            sum_backgound_histogram = hist_ptr(new Histogram(*histogram));
-            sum_backgound_histogram->SetLegendTitle("Bkg. uncertainty");
+    void AddBackgroundHistogram(const Hist& original_hist, const std::string& legend_title, const Color& color)
+    {
+        auto hist = PrepareHistogram(original_hist, bkg_opt, legend_title, bkg_opt.line_color, color, false);
+        backgrounds.push_back(hist);
+        if(bkg_sum) {
+            bkg_sum->Add(hist.get(), 1.);
+        } else {
+            bkg_sum = std::make_shared<Hist>(*hist);
+            if(bkg_unc_opt)
+                ApplyHistOptionsEx(*bkg_sum, *bkg_unc_opt);
         }
-        else
-            sum_backgound_histogram->Add(histogram.get());
+        range_tuner.Add(*bkg_sum, false, true);
     }
 
-    void AddSignalHistogram(const Histogram& original_signal, const std::string& legend_title,
-                            const root_ext::Color& color, double scale_factor)
+    void AddDataHistogram(const Hist& original_hist, const std::string& legend_title)
     {
-        hist_ptr histogram = PrepareHistogram(original_signal);
-        //Reb
-        htt_style::SetStyle();
-        histogram->SetFillStyle(1001);
-        histogram->SetLineStyle(2);
-        histogram->SetFillColor(0);
-		//histogram->SetLineColor(kBlue+3);
-        histogram->SetLineColor(static_cast<Color_t>(color.GetColorId()));
-        histogram->SetLineWidth(3);
-        //ours
-        //histogram->SetLineColor(color);
-        //histogram->SetLineColor(4);
-        //histogram->SetLineStyle(11); //2
-        //histogram->SetLineWidth(2); //3
-        histogram->Scale(scale_factor);
-        signal_histograms.push_back(histogram);
-        histogram->SetLegendTitle(legend_title);
+        if(data)
+            throw exception("Only one data histogram per stack is supported.");
+        data = PrepareHistogram(original_hist, data_opt, legend_title, data_opt.line_color, data_opt.fill_color, true);
     }
 
-    void AddDataHistogram(const Histogram& original_data, const std::string& legend_title,
-                          bool blind, const std::vector< std::pair<double, double> >& blind_regions)
+    bool HasPrintableContent() const { return signals.size() || backgrounds.size() || data; }
+
+    void Draw(std::shared_ptr<TPad> main_pad, std::shared_ptr<TPad> ratio_pad, std::shared_ptr<TLegend> legend,
+              std::vector<std::shared_ptr<TObject>>& plot_items)
     {
-        if(data_histogram)
-            throw std::runtime_error("Only one data histogram per stack is supported.");
-
-        data_histogram = PrepareHistogram(original_data, true);
-        data_histogram->SetLegendTitle(legend_title);
-
-//        if(blind)
-//            BlindHistogram(data_histogram, blind_regions);
-    }
-
-    bool NeedDraw() const
-    {
-        return background_histograms.size() || data_histogram || signal_histograms.size();
-    }
-
-    void Draw(TCanvas& canvas)
-    {
-        cms_tdr::setTDRStyle();
-//        htt_style::SetStyle();
-//        gStyle->SetLineStyleString(11,"20 10");
-
-        if(page.layout.has_title) {
-            TPaveLabel *title = root_ext::Adapter::NewPaveLabel(page.layout.title_box, page.title);
-            title->SetTextFont(page.layout.title_font);
-            title->Draw();
-        }
-        main_pad = std::shared_ptr<TPad>(root_ext::Adapter::NewPad(page.side.layout.main_pad));
-        if(page.side.use_log_scaleX)
-            main_pad->SetLogx();
-        if(page.side.use_log_scaleY)
-            main_pad->SetLogy();
-
-        int W = 700;
-        int H = 700;
-
-        int H_ref = 700;
-        int W_ref = 700;
-
-        float T = 0.08f*H_ref;
-        float B = 0.14f*H_ref;
-        float L = 0.18f*W_ref;
-        float R = 0.05f*W_ref;
-
-//        main_pad->SetFillColor(0);
-//        main_pad->SetBorderMode(0);
-//        main_pad->SetFrameFillStyle(0);
-//        main_pad->SetFrameBorderMode(0);
-        main_pad->SetLeftMargin( L/W );
-        main_pad->SetRightMargin( R/W );
-        main_pad->SetTopMargin( T/H );
-        main_pad->SetBottomMargin( B/H );
-        main_pad->SetTickx(1);
-        main_pad->SetTicky(1);
-
-        main_pad->Draw();
+        main_pad->SetLogx(page_opt.log_x);
+        main_pad->SetLogy(page_opt.log_y);
         main_pad->cd();
 
-        if (data_histogram)
-            legend->AddEntry(data_histogram.get(), data_histogram->GetLegendTitle().c_str(), "PLE");
-        if (drawBKGerrors && sum_backgound_histogram)
-            legend->AddEntry(sum_backgound_histogram.get(),sum_backgound_histogram->GetLegendTitle().c_str(), "f");
-        for(const hist_ptr& signal : signal_histograms)
-            legend->AddEntry(signal.get(), signal->GetLegendTitle().c_str(), "F");
-        for(const hist_ptr& background : background_histograms)
-            legend->AddEntry(background.get(), background->GetLegendTitle().c_str(), "F");
+        const bool has_ratio = ratio_pad.get() != nullptr;
+        if(page_opt.y_min)
+            range_tuner.y_min = *page_opt.y_min;
+        auto frame_hist = range_tuner.DrawFrame(*main_pad, page_opt.log_y, page_opt.y_max_sf, page_opt.y_min_sf,
+                                                page_opt.y_min_log);
+        ApplyAxisSetup(*frame_hist, has_ratio);
 
-
-
-        if (background_histograms.size()) {
-            const auto& bkg_hist = background_histograms.front();
-            stack = std::shared_ptr<THStack>(new THStack(bkg_hist->GetName(), bkg_hist->GetTitle()));
-
-            for (auto iter = background_histograms.rbegin(); iter != background_histograms.rend(); ++iter){
+        if(backgrounds.size()) {
+            auto stack = std::make_shared<THStack>("", "");
+            for (auto iter = backgrounds.rbegin(); iter != backgrounds.rend(); ++iter)
                 stack->Add(iter->get());
-            }
-            stack->Draw("HIST");
-
-            Double_t maxY = stack->GetMaximum();
-            if (data_histogram){
-                const Int_t maxBin = data_histogram->GetMaximumBin();
-                const Double_t maxData = data_histogram->GetBinContent(maxBin) + data_histogram->GetBinError(maxBin);
-                maxY = std::max(maxY, maxData);
-            }
-
-            for (const hist_ptr& signal : signal_histograms)
-                maxY = std::max(maxY,signal->GetMaximum());
-
-            stack->SetMaximum(maxY * bkg_hist->MaxYDrawScaleFactor());
-
-            const Double_t minY = page.side.use_log_scaleY ? 0.01 : 0;
-            stack->SetMinimum(minY);
-
-
-            if (draw_ratio){
-                stack->GetXaxis()->SetTitle("");
-                stack->GetXaxis()->SetLabelColor(kWhite);
-
-            }
-            else {
-                stack->GetXaxis()->SetTitle(page.side.axis_titleX.c_str());
-                stack->GetXaxis()->SetTitleOffset(1.00); //1.05
-//                stack->GetXaxis()->SetTitleSize(0.055); //0.04
-                stack->GetXaxis()->SetLabelSize(0.04f);
-                stack->GetXaxis()->SetLabelOffset(0.015f);
-//                stack->GetXaxis()->SetTitleFont(42); //62
-            }
-
-//            stack->GetYaxis()->SetTitleSize(0.055); //0.05
-            stack->GetYaxis()->SetTitleOffset(1.4f); //1.45
-            stack->GetYaxis()->SetLabelSize(0.04f);
-            stack->GetYaxis()->SetTitle(page.side.axis_titleY.c_str());
-//            stack->GetYaxis()->SetTitleFont(42); //62
-
-            if (drawBKGerrors){
-                sum_backgound_histogram->SetMarkerSize(0);
-                //new
-                // int new_idx = root_ext::CreateTransparentColor(12,0.5);
-                // sum_backgound_histogram->SetFillColor(new_idx);
-                // sum_backgound_histogram->SetFillStyle(3001);
-                // sum_backgound_histogram->SetLineWidth(0);
-                // sum_backgound_histogram->Draw("e2same");
-//                end new
-
-                  //old style for bkg uncertainties
-               sum_backgound_histogram->SetFillColor(13);
-               sum_backgound_histogram->SetFillStyle(3013);
-               sum_backgound_histogram->SetLineWidth(0);
-               sum_backgound_histogram->Draw("e2same");
-            }
+            DrawItem(*stack, bkg_opt.draw_opt);
+            plot_items.push_back(stack);
+            if(bkg_unc_opt)
+                DrawItem(*bkg_sum, bkg_unc_opt->draw_opt);
         }
 
-        for(const hist_ptr& signal : signal_histograms)
-            signal->Draw("SAME HIST");
+        for(const auto& signal : signals)
+            DrawItem(*signal, signal_opt.draw_opt);
 
-        if(data_histogram) {
-            data_histogram->SetMarkerColor(1);
-            data_histogram->SetLineColor(1);
-            data_histogram->SetFillColor(1);
-            data_histogram->SetFillStyle(0);
-            data_histogram->SetLineWidth(2);
+        main_pad->RedrawAxis();
+        if(data)
+            DrawItem(*data_graph, data_opt.draw_opt);
 
-
-            data_histogram->SetMarkerStyle(20);
-            data_histogram->SetMarkerSize(1.1f);
-            data_histogram->Draw("samepPE0");
-//            data_histogram->Draw("pE0same");
+        if(legend) {
+            if(data_graph)
+                legend->AddEntry(data_graph.get(), data->GetLegendTitle().c_str(), data_opt.legend_style.c_str());
+            if(bkg_unc_opt)
+                legend->AddEntry(bkg_sum.get(), bkg_unc_opt->legend_title.c_str(), bkg_unc_opt->legend_style.c_str());
+            for(const auto& signal : signals)
+                legend->AddEntry(signal.get(), signal->GetLegendTitle().c_str(), signal_opt.legend_style.c_str());
+            for(const auto& background : backgrounds)
+                legend->AddEntry(background.get(), background->GetLegendTitle().c_str(), bkg_opt.legend_style.c_str());
         }
 
-        text->Draw("same");
-//        channelText->Draw("same");
-        categoryText->Draw("same");
-
-        cms_tdr::writeExtraText = true;
-        cms_tdr::extraText = TString("Unpublished");
-        cms_tdr::CMS_lumi(main_pad.get(), 4, 11); //Labels Definition
-
-
-        legend->Draw("same");
-
-        const std::string axis_titleX = page.side.axis_titleX;
-        if (data_histogram && draw_ratio){
-            ratio_pad = std::shared_ptr<TPad>(root_ext::Adapter::NewPad(page.side.layout.ratio_pad));
-            if(page.side.use_log_scaleX)
-                ratio_pad->SetLogx();
-
-            ratio_pad->Draw();
-
+        if(ratio_pad && bkg_sum && (bkg_unc_opt || data_graph)) {
             ratio_pad->cd();
+            ratio_pad->SetLogx(page_opt.log_x);
+            ratio_pad->SetLogy(page_opt.ratio_log_y);
 
+            HistPtr ratio_unc_hist;
+            GraphPtr ratio_graph;
+            PlotRangeTuner ratio_range_tuner;
+            if(bkg_unc_opt) {
+                ratio_unc_hist = plotting::CreateNormalizedUncertaintyHistogram(*bkg_sum);
+                plot_items.push_back(ratio_unc_hist);
+                ratio_range_tuner.Add(*ratio_unc_hist, false, true);
+            }
+            if(data_graph) {
+                ratio_graph = plotting::CreateRatioGraph(*data_graph, *bkg_sum);
+                plot_items.push_back(ratio_graph);
+                ratio_range_tuner.Add(*ratio_graph, false, true);
+            }
 
-            ratio_histogram = hist_ptr(new Histogram(*data_histogram));
-            ratio_histogram->Divide(sum_backgound_histogram.get());
-
-            ratio_histogram->GetYaxis()->SetRangeUser(0.5,1.5);
-            ratio_histogram->GetYaxis()->SetNdivisions(505);
-            ratio_histogram->GetYaxis()->SetLabelSize(0.11f);
-            ratio_histogram->GetYaxis()->SetTitleSize(0.14f);
-            ratio_histogram->GetYaxis()->SetTitleOffset(0.55f);
-            ratio_histogram->GetYaxis()->SetTitle("Obs/Bkg");
-            ratio_histogram->GetYaxis()->SetTitleFont(62);
-            ratio_histogram->GetXaxis()->SetNdivisions(510);
-            ratio_histogram->GetXaxis()->SetTitle(axis_titleX.c_str());
-            ratio_histogram->GetXaxis()->SetTitleSize(0.1f);
-            ratio_histogram->GetXaxis()->SetTitleOffset(0.98f);
-            ratio_histogram->GetXaxis()->SetTitleFont(62);
-            //ratio_histogram->GetXaxis()->SetLabelColor(kBlack);
-            ratio_histogram->GetXaxis()->SetLabelSize(0.1f);
-            ratio_histogram->SetMarkerStyle(20);
-            ratio_histogram->SetMarkerColor(1);
-            ratio_histogram->SetMarkerSize(1);
-
-            ratio_histogram->Draw("E0P");
-
-            TLine* line = new TLine();
-            line->SetLineStyle(3);
-            line->DrawLine(ratio_histogram->GetXaxis()->GetXmin(), 1, ratio_histogram->GetXaxis()->GetXmax(), 1);
-            TLine* line1 = new TLine();
-            line1->SetLineStyle(3);
-            line1->DrawLine(ratio_histogram->GetXaxis()->GetXmin(), 1.2, ratio_histogram->GetXaxis()->GetXmax(), 1.2);
-            TLine* line2 = new TLine();
-            line2->SetLineStyle(3);
-            line2->DrawLine(ratio_histogram->GetXaxis()->GetXmin(), 0.8, ratio_histogram->GetXaxis()->GetXmax(), 0.8);
-            ratio_pad->SetTopMargin(0.04f);
-            ratio_pad->SetBottomMargin(0.3f);
-            ratio_pad->Update();
-        }
-
-        canvas.cd();
-        main_pad->Draw();
-        canvas.RedrawAxis();
-        canvas.GetFrame()->Draw();
-
-        canvas.cd();
-        if (data_histogram && draw_ratio)
-            ratio_pad->Draw();
-    }
-
-private:
-    hist_ptr PrepareHistogram(const Histogram& original_histogram, bool set_poisson_errors = false)
-    {
-        hist_ptr histogram(new Histogram(original_histogram));
-        if(set_poisson_errors)
-            histogram->SetBinErrorOption(TH1::kPoisson);
-        histogram->SetLineColor(kBlack);
-        histogram->SetLineWidth(1.);
-        if (histogram->NeedToDivideByBinWidth())
-            root_ext::DivideByBinWidth(*histogram);
-        UpdateDrawInfo(histogram);
-        return histogram;
-    }
-
-    static void BlindHistogram(hist_ptr histogram, const std::vector< std::pair<double, double> >& blind_regions)
-    {
-        for(Int_t n = 1; n <= histogram->GetNbinsX(); ++n) {
-            const double x = histogram->GetBinCenter(n);
-            const auto blind_predicate = [&](const std::pair<double, double>& region) -> bool {
-                return x > region.first && x < region.second;
-            };
-
-            const bool need_blind = std::any_of(blind_regions.begin(), blind_regions.end(), blind_predicate);
-            histogram->SetBinContent(n, need_blind ? -1 : histogram->GetBinContent(n));
-            histogram->SetBinError(n, need_blind ? -1 : histogram->GetBinError(n));
+            ratio_range_tuner.x_min = range_tuner.x_min;
+            ratio_range_tuner.x_max = range_tuner.x_max;
+            auto ratio_frame_hist = ratio_range_tuner.DrawFrame(*ratio_pad, page_opt.ratio_log_y,
+                                                                page_opt.ratio_y_max_sf, page_opt.ratio_y_min_sf,
+                                                                page_opt.ratio_y_min_log);
+            ApplyRatioAxisSetup(*ratio_frame_hist);
+            if(ratio_unc_hist)
+                DrawItem(*ratio_unc_hist, bkg_unc_opt->draw_opt);
+            if(ratio_graph)
+                DrawItem(*ratio_graph, data_opt.draw_opt);
         }
     }
 
-    void UpdateDrawInfo(hist_ptr hist)
+private:
+    void UpdatePageOptions(const Hist& hist)
     {
-        page.side.use_log_scaleX = hist->UseLogX();
-        page.side.use_log_scaleY = hist->UseLogY();
-        page.side.axis_titleX = hist->GetXTitle();
-        page.side.axis_titleY = hist->GetYTitle();
+        page_opt.log_x = hist.UseLogX();
+        page_opt.log_y = hist.UseLogY();
+        page_opt.y_max_sf = hist.MaxYDrawScaleFactor();
+        page_opt.y_min_sf = hist.MinYDrawScaleFactor();
+        page_opt.x_title = hist.GetXTitle();
+        page_opt.y_title = hist.GetYTitle();
+        page_opt.divide_by_bin_width = hist.NeedToDivideByBinWidth();
+        double y_min;
+        if(hist.TryGetMinY(y_min)) {
+            page_opt.y_min = y_min;
+            page_opt.y_min_log = y_min;
+        }
+    }
+
+    template<typename Item>
+    static void ApplyHistOptions(Item& item, const HistOptions& opt)
+    {
+        item.SetFillStyle(opt.fill_style);
+        item.SetFillColor(opt.fill_color.GetColor_t());
+        item.SetLineStyle(opt.line_style);
+        item.SetLineWidth(opt.line_width);
+        item.SetLineColor(opt.line_color.GetColor_t());
+        item.SetMarkerStyle(opt.marker_style);
+        item.SetMarkerSize(opt.marker_size);
+        item.SetMarkerColor(opt.marker_color.GetColor_t());
+    }
+
+    static void ApplyHistOptionsEx(Hist& hist, const HistOptions& opt)
+    {
+        ApplyHistOptions(hist, opt);
+        hist.SetLegendTitle(opt.legend_title);
+    }
+
+    HistPtr PrepareHistogram(const Hist& original_histogram, const HistOptions& opt, const std::string& legend_title,
+                             const Color& line_color, const Color& fill_color, bool is_data, double scale_factor = 1.)
+    {
+        auto hist = std::make_shared<Hist>(original_histogram);
+        auto opt_copy = opt;
+        opt_copy.fill_color = fill_color;
+        opt_copy.line_color = line_color;
+        opt_copy.legend_title = legend_title;
+
+        UpdatePageOptions(*hist);
+        if(is_data) {
+            hist->SetBinErrorOption(TH1::kPoisson);
+            const auto blind_ranges = opt.blind ? hist->GetBlindRanges() : MultiRange();
+            data_graph = plotting::HistogramToGraph(*hist, page_opt.divide_by_bin_width, blind_ranges);
+            ApplyHistOptions(*data_graph, opt_copy);
+            range_tuner.Add(*data_graph, false, true);
+        }
+        else {
+            if(page_opt.divide_by_bin_width)
+                DivideByBinWidth(*hist);
+            hist->Scale(scale_factor);
+            range_tuner.Add(*hist, false, true);
+        }
+        ApplyHistOptionsEx(*hist, opt_copy);
+        return hist;
+    }
+
+    static HistPtr CreateSumHistogram(const HistPtrVec& hists)
+    {
+        if(hists.empty())
+            throw exception("Unable to create sum histogram.");
+        auto iter = hists.begin();
+        auto sum_hist = std::make_shared<Hist>(**iter++);
+        for(; iter != hists.end(); ++iter)
+            sum_hist->Add(iter->get(), 1.);
+        return sum_hist;
+    }
+
+    void ApplyAxisSetup(TH1& frame_hist, bool has_ratio) const
+    {
+        frame_hist.GetYaxis()->SetTitle(page_opt.y_title.c_str());
+        frame_hist.GetYaxis()->SetTitleSize(page_opt.axis_title_sizes.y());
+        frame_hist.GetYaxis()->SetTitleOffset(page_opt.axis_title_offsets.y());
+        frame_hist.GetYaxis()->SetLabelSize(page_opt.axis_label_sizes.y());
+        frame_hist.GetYaxis()->SetLabelOffset(page_opt.axis_label_offsets.y());
+        if(has_ratio) {
+            frame_hist.GetXaxis()->SetTitle("");
+            frame_hist.GetXaxis()->SetTitleSize(0);
+            frame_hist.GetXaxis()->SetTitleOffset(0);
+            frame_hist.GetXaxis()->SetLabelSize(0);
+            frame_hist.GetXaxis()->SetLabelOffset(0);
+        } else {
+            frame_hist.GetXaxis()->SetTitle(page_opt.x_title.c_str());
+            frame_hist.GetXaxis()->SetTitleSize(page_opt.axis_title_sizes.x());
+            frame_hist.GetXaxis()->SetTitleOffset(page_opt.axis_title_offsets.x());
+            frame_hist.GetXaxis()->SetLabelSize(page_opt.axis_label_sizes.x());
+            frame_hist.GetXaxis()->SetLabelOffset(page_opt.axis_label_offsets.x());
+        }
+    }
+
+    void ApplyRatioAxisSetup(TH1& frame_hist) const
+    {
+        const float sf = page_opt.GetRatioPadSizeSF();
+        frame_hist.GetXaxis()->SetTitle(page_opt.x_title.c_str());
+        frame_hist.GetXaxis()->SetTitleSize(page_opt.axis_title_sizes.x() * sf);
+        frame_hist.GetXaxis()->SetTitleOffset(page_opt.axis_title_offsets.x());
+        frame_hist.GetXaxis()->SetLabelSize(page_opt.axis_label_sizes.x() * sf);
+        frame_hist.GetXaxis()->SetLabelOffset(page_opt.axis_label_offsets.x());
+        frame_hist.GetYaxis()->SetTitle(page_opt.ratio_y_title.c_str());
+        frame_hist.GetYaxis()->SetTitleSize(page_opt.ratio_y_title_size * sf);
+        frame_hist.GetYaxis()->SetTitleOffset(page_opt.ratio_y_title_offset);
+        frame_hist.GetYaxis()->SetLabelSize(page_opt.ratio_y_label_size * sf);
+        frame_hist.GetYaxis()->SetLabelOffset(page_opt.ratio_y_label_offset);
+        frame_hist.GetYaxis()->SetNdivisions(page_opt.ratio_n_div_y);
+        if(page_opt.max_ratio > 0)
+            frame_hist.GetYaxis()->SetRangeUser(std::max(0., 2 - page_opt.max_ratio), page_opt.max_ratio);
+    }
+
+    template<typename Item>
+    void DrawItem(Item& item, const std::string& draw_opt) const
+    {
+        const auto opt = "SAME" + draw_opt;
+        item.Draw(opt.c_str());
     }
 
 private:
-    root_ext::SingleSidedPage page;
-    hist_ptr data_histogram;
-    hist_ptr sum_backgound_histogram;
-    hist_ptr ratio_histogram;
-    hist_ptr_vector background_histograms;
-    hist_ptr_vector signal_histograms;
-    std::shared_ptr<THStack> stack;
-    std::shared_ptr<TLegend> legend;
-    std::shared_ptr<TPaveText> text;
-    std::shared_ptr<TPaveText> categoryText;
-    std::shared_ptr<TPaveText> channelText;
-    std::shared_ptr<TPad> main_pad, ratio_pad;
-    std::string channelName;
-    std::string categoryName;
-    bool draw_ratio;
-    bool drawBKGerrors;
+    HistPtrVec signals, backgrounds;
+    HistPtr data, bkg_sum;
+    GraphPtr data_graph;
+
+    PageOptions page_opt;
+    HistOptions signal_opt, bkg_opt, data_opt;
+    boost::optional<HistOptions> bkg_unc_opt;
+
+    PlotRangeTuner range_tuner;
 };
 
 } // namespace analysis
