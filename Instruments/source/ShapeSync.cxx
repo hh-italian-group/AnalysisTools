@@ -277,7 +277,7 @@ private:
             hist->SetMarkerColor(input->color.GetColor_t());
             integrals[input->name] = Integral(*input->histograms.at(dir_name).at(hist_name), false);
             if(draw_options->divide_by_bin_width)
-                root_ext::DivideByBinWidth(*hist);
+                root_ext::plotting::DivideByBinWidth(*hist);
             hist->SetMarkerStyle(kDot);
             rangeTuner.Add(*hist, false, true);
         }

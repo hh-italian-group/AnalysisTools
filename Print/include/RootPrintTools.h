@@ -326,6 +326,25 @@ std::shared_ptr<Hist> CreateNormalizedUncertaintyHistogram(const Hist& hist)
     return norm_hist;
 }
 
+inline void DivideByBinWidth(TH1& histogram)
+{
+    for(Int_t n = 1; n <= histogram.GetNbinsX(); ++n) {
+        const double new_value = histogram.GetBinContent(n) / histogram.GetBinWidth(n);
+        const double new_bin_error = histogram.GetBinError(n) / histogram.GetBinWidth(n);
+        histogram.SetBinContent(n, new_value);
+        histogram.SetBinError(n, new_bin_error);
+    }
+}
+
+inline void ApplyAdditionalUncertainty(TH1& histogram, double unc)
+{
+    for(Int_t n = 0; n <= histogram.GetNbinsX() + 1; ++n) {
+        const double bin_value = histogram.GetBinContent(n);
+        const double bin_error = histogram.GetBinError(n);
+        const double new_error = std::hypot(bin_error, bin_value * unc);
+        histogram.SetBinError(n, new_error);
+    }
+}
 
 } // namespace plotting
 } // root_ext

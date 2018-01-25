@@ -168,13 +168,13 @@ struct Histogram {
     std::string legend_title, legend_style{"f"};
     std::string draw_opt{"HIST"}, unc_hist;
 
-    bool blind{false};
+    bool blind{false}, apply_syst_unc{false};
 
     Histogram() {}
     explicit Histogram(const Item& opt)
     {
         READ_ALL(fill_style, fill_color, line_style, line_width, line_color, marker_style, marker_size, marker_color,
-                 legend_title, legend_style, draw_opt, unc_hist, blind);
+                 legend_title, legend_style, draw_opt, unc_hist, blind, apply_syst_unc);
     }
 
     bool DrawUnc() const { return !unc_hist.empty(); }

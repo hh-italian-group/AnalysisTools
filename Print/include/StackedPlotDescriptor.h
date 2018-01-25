@@ -205,8 +205,12 @@ private:
             range_tuner.Add(*data_graph, false, true);
         }
         else {
+            if(opt.apply_syst_unc) {
+                hist->Scale(hist->GetPostfitScaleFactor());
+                plotting::ApplyAdditionalUncertainty(*hist, hist->GetSystematicUncertainty());
+            }
             if(page_opt.divide_by_bin_width)
-                DivideByBinWidth(*hist);
+                plotting::DivideByBinWidth(*hist);
             hist->Scale(scale_factor);
             range_tuner.Add(*hist, false, true);
         }

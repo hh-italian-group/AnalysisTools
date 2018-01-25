@@ -577,14 +577,4 @@ ENUM_NAMES(TextAlign) = {
     { TextAlign::RightTop, "right_top" }
 };
 
-inline void DivideByBinWidth(TH1& histogram)
-{
-    for(Int_t n = 1; n <= histogram.GetNbinsX(); ++n) {
-        const double new_value = histogram.GetBinContent(n) / histogram.GetBinWidth(n);
-        const double new_bin_error = histogram.GetBinError(n) / histogram.GetBinWidth(n);
-        histogram.SetBinContent(n, new_value);
-        histogram.SetBinError(n, new_bin_error);
-    }
-}
-
 } // namespace root_ext
