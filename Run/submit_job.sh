@@ -25,7 +25,7 @@ fi
 
 mkdir -p "$OUTPUT_PATH"
 if [ ! -d "$OUTPUT_PATH" ] ; then
-    echo "ERROR: can't create output path '$RUN_SCRIPT_PATH'."
+    echo "ERROR: can't create output path '$OUTPUT_PATH'."
     exit 1
 fi
 cd "$OUTPUT_PATH"
@@ -46,13 +46,43 @@ SCRIPT_NAME="run_job.sh"
 SCRIPT_PATH="$PWD/$SCRIPT_NAME"
 LOG_NAME="run_job.log"
 
+
+function arg_to_str {
+    local whitespace="[[:space:]]"
+    ARG_STR=()
+    for arg in "$@" ; do
+        if [[ $arg =~ $whitespace ]] ; then
+            arg=\"$arg\"
+        fi
+        ARG_STR+=("$arg")
+    done
+}
+
+function determine_n_slots {
+    local pattern='^[-]+n[_-](threads|processes|parallel)$'
+    local next=0
+    N_SLOTS=1
+    for arg in "$@" ; do
+        if (( $next == 1 )) ; then
+            N_SLOTS=$arg
+            break
+        fi
+        if [[ $arg =~ $pattern ]] ; then
+            next=1
+        fi
+    done
+}
+
+arg_to_str "${@:5}"
+determine_n_slots "${@:5}"
+
 read -d '' SCRIPT << EOF
 #!/bin/sh
 cd "$OUTPUT_PATH"
 echo "Job started at \$(date)." >> $LOG_NAME
 $SOURCE_LINE
 eval \$( scramv1 runtime -sh )
-$EXE_NAME ${@:5} &>> $LOG_NAME
+$EXE_NAME ${ARG_STR[@]} &>> $LOG_NAME
 RESULT=\$\?
 if [ \$RESULT -eq 0 ] ; then
     MSG="successfully ended"
@@ -67,11 +97,10 @@ chmod u+x "$SCRIPT_NAME"
 
 echo "Job submission at $(date)." > $LOG_NAME
 if [ $SITE = "Pisa" ] ; then
-    bsub -q "$QUEUE" -E "/usr/local/lsf/work/infn-pisa/scripts/testq-preexec-cms.bash" -J "$JOB_NAME" \
+    bsub -q "$QUEUE" -n $N_SLOTS -E "/usr/local/lsf/work/infn-pisa/scripts/testq-preexec-cms.bash" -J "$JOB_NAME" \
          "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 elif [ $SITE = "Bari" -o $SITE = "Milan" ] ; then
     qsub -q "$QUEUE" -N "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 else
-    bsub -q "$QUEUE" -J "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
+    bsub -q "$QUEUE" -n $N_SLOTS -J "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 fi
-
