@@ -96,7 +96,10 @@ echo "$SCRIPT" > "$SCRIPT_NAME"
 chmod u+x "$SCRIPT_NAME"
 
 echo "Job submission at $(date)." > $LOG_NAME
-if [ $SITE = "Pisa" ] ; then
+
+if [ $QUEUE = "interactive" ] ; then
+    "$SCRIPT_PATH"
+elif [ $SITE = "Pisa" ] ; then
     bsub -q "$QUEUE" -n $N_SLOTS -E "/usr/local/lsf/work/infn-pisa/scripts/testq-preexec-cms.bash" -J "$JOB_NAME" \
          "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 elif [ $SITE = "Bari" -o $SITE = "Milan" ] ; then
