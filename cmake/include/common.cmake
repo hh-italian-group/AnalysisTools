@@ -37,7 +37,15 @@ set(CXX_WARNING_FLAGS "-Weverything -Wno-missing-prototypes -Wno-unused-member-f
                        -Wno-shadow -Wno-unknown-pragmas -Wno-format-nonliteral -Wno-double-promotion -Wno-float-equal \
                        -Wno-padded -Wno-missing-braces")
 # -ftime-report
-set(CXX_COMMON_FLAGS "-std=c++14 -pedantic ${CXX_WARNING_FLAGS}")
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
+if(COMPILER_SUPPORTS_CXX17)
+	set(CXX_STD_FLAG "-std=c++17")
+else()
+	set(CXX_STD_FLAG "-std=c++14")
+endif()
+
+set(CXX_COMMON_FLAGS "${CXX_STD_FLAG} -pedantic ${CXX_WARNING_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CXX_COMMON_FLAGS} -O3")
 set(CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -g")
 
@@ -64,4 +72,3 @@ foreach(exe_source ${EXE_SOURCE_LIST})
     endif()
     list(APPEND EXE_LIST "${exe_name}")
 endforeach()
-
