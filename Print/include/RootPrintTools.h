@@ -296,16 +296,21 @@ template<typename Hist>
 std::shared_ptr<TGraphAsymmErrors> CreateRatioGraph(const TGraphAsymmErrors& graph, const Hist& hist)
 {
     auto ratio_graph = std::make_shared<TGraphAsymmErrors>(graph);
-    for(int i = 0; i < graph.GetN(); ++i) {
+    for(int i = 0, k = 0; i < graph.GetN(); ++i) {
         const double x = graph.GetX()[i];
         const double y = graph.GetY()[i];
         const double ey_low = graph.GetEYlow()[i];
         const double ey_high = graph.GetEYhigh()[i];
         const int bin = hist.FindFixBin(x);
         const double hist_y = hist.GetBinContent(bin);
-        ratio_graph->GetY()[i] = y / hist_y;
-        ratio_graph->GetEYlow()[i] = ey_low / hist_y;
-        ratio_graph->GetEYhigh()[i] = ey_high / hist_y;
+        if(hist_y != 0) {
+            ratio_graph->GetY()[k] = y / hist_y;
+            ratio_graph->GetEYlow()[k] = ey_low / hist_y;
+            ratio_graph->GetEYhigh()[k] = ey_high / hist_y;
+            ++k;
+        } else {
+            ratio_graph->RemovePoint(k);
+        }
     }
     return ratio_graph;
 }
