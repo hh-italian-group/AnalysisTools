@@ -18,6 +18,8 @@ fi
 
 BUILD_ROOT="$1"
 SOURCE_ROOT="$(pwd)"
+CC_COMPILER=clang
+CXX_COMPILER=clang++
 
 if [ "x$CMAKE" = "x" ] ; then
 	CMAKE=cmake3
@@ -36,7 +38,7 @@ for PROJECT_NAME in "${@:2}" ; do
     fi
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
-    $CMAKE "$SOURCE_DIR"
+    CC=$CC_COMPILER CXX=$CXX_COMPILER $CMAKE "$SOURCE_DIR"
     RESULT=$?
     if [ $RESULT -ne 0 ] ; then
         echo "ERROR: unable to cmake project '$PROJECT_NAME'."

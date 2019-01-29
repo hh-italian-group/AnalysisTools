@@ -29,7 +29,6 @@ file(GLOB_RECURSE SCRIPT_LIST "*.sh" "*.py")
 list(FILTER SCRIPT_LIST EXCLUDE REGEX "/__init__\\.py$")
 file(GLOB_RECURSE CONFIG_LIST "*.cfg" "*.xml" "*.txt" "*.md")
 
-set(CMAKE_CXX_COMPILER clang++)
 set(CXX_WARNING_FLAGS "-Weverything -Wno-missing-prototypes -Wno-unused-member-function -Wno-weak-vtables \
                        -Wno-documentation -Wno-gnu-zero-variadic-macro-arguments -Wno-global-constructors \
                        -Wno-exit-time-destructors -Wno-newline-eof -Wno-c++98-compat-pedantic \
