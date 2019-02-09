@@ -33,7 +33,7 @@ using positional_options_description = boost::program_options::positional_option
 template <typename T>
 auto value(T* v) -> decltype(boost::program_options::value(v)) { return boost::program_options::value(v); }
 
-bool ParseProgramArguments(int argc, char* argv[], const options_description& options_desc,
+inline bool ParseProgramArguments(int argc, char* argv[], const options_description& options_desc,
                            const positional_options_description& pos_desc)
 {
     namespace po = boost::program_options;

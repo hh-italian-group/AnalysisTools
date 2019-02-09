@@ -54,7 +54,7 @@ for PROJECT in $PROJECTS ; do
         if [ "$NAME" = "$TARGET" ] ; then
             TARGET_FOUND=1
             cd "$PROJECT"
-            make "$NAME"
+            make -j4 "$NAME"
             RESULT=$?
             if [ $RESULT -ne 0 ] ; then
                 echo "ERROR: failed to compile $NAME."

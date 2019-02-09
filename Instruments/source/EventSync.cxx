@@ -22,9 +22,11 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <Rtypes.h>
 #include <TError.h>
 
+#include "RootExt.h"
+#include "EventIdentifier.h"
+
 #include "AnalysisTools/Run/include/program_main.h"
 #include "AnalysisTools/Instruments/include/SyncPlotsConfig.h"
-#include "AnalysisTools/Core/include/RootExt.h"
 
 struct Arguments {
     REQ_ARG(std::string, config);
@@ -605,7 +607,7 @@ private:
     }
 
 private:
-    Arguments args; 
+    Arguments args;
     SyncPlotConfig config;
     std::string channel, sample;
     std::array<std::string, N> groups, rootFileNames, treeNames, preSelections;

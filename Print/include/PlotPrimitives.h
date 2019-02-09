@@ -3,16 +3,12 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
 #pragma once
 
-#include <sstream>
-#include <boost/regex.hpp>
-#include <boost/algorithm/string.hpp>
-#include <TH1.h>
-#include <TROOT.h>
-#include <TColor.h>
 #include <TAttText.h>
 #include <TH1.h>
-#include "EnumNameMap.h"
-#include "NumericPrimitives.h"
+#include <TColor.h>
+
+#include "AnalysisTools/Core/include/EnumNameMap.h"
+#include "AnalysisTools/Core/include/NumericPrimitives.h"
 
 namespace root_ext {
 
@@ -321,244 +317,57 @@ std::istream& operator>>(std::istream& s, MarginBox<T>& b)
     return s;
 }
 
-namespace detail {
-
-class ReferenceColorCollection {
-public:
-    using ColorNameMap = analysis::EnumNameMap<EColor>;
-    using ColorRelativeRangeMap = std::unordered_map<EColor, analysis::RelativeRange<int>, ColorNameMap::EnumHash>;
-    using ColorRangeMap = std::unordered_map<EColor, analysis::Range<int>, ColorNameMap::EnumHash>;
-
-    static const ColorNameMap& GetReferenceColorNames()
-    {
-        static const ColorNameMap names = ColorNameMap("EColor", {
-            { kWhite, "kWhite" }, { kBlack, "kBlack" }, { kGray, "kGray" }, { kRed, "kRed" }, { kGreen, "kGreen" },
-            { kBlue, "kBlue" }, { kYellow, "kYellow" }, { kMagenta, "kMagenta" }, { kCyan, "kCyan" },
-            { kOrange, "kOrange" }, { kSpring, "kSpring" }, { kTeal, "kTeal" }, { kAzure, "kAzure" },
-            { kViolet, "kViolet" }, { kPink, "kPink" }
-        });
-        return names;
-    }
-
-    static const ColorRelativeRangeMap& GetReferenceColorRelativeRanges()
-    {
-        static const ColorRelativeRangeMap ranges = {
-            { kWhite, { 0, 0 } }, { kBlack, { 0, 0 } }, { kGray, { 0, 3 } }, { kRed, { -10, 4 } },
-            { kGreen, { -10, 4 } }, { kBlue, { -10, 4 } }, { kYellow, { -10, 4 } }, { kMagenta, { -10, 4 } },
-            { kCyan, { -10, 4 } }, { kOrange, { -9, 10 } }, { kSpring, { -9, 10 } }, { kTeal, { -9, 10 } },
-            { kAzure, { -9, 10 } }, { kViolet, { -9, 10 } }, { kPink, { -9, 10 } }
-        };
-        return ranges;
-    }
-
-    static const ColorRangeMap& GetReferenceColorRanges()
-    {
-        static ColorRangeMap ranges;
-        if(!ranges.size()) {
-            for(const auto& rel_range : GetReferenceColorRelativeRanges())
-                ranges[rel_range.first] = rel_range.second.ToAbsoluteRange(static_cast<int>(rel_range.first));
-        }
-        return ranges;
-    }
-
-    static bool FindReferenceColor(int color_id, EColor& e_color, int& shift)
-    {
-        for(const auto& range : GetReferenceColorRanges()) {
-            if(range.second.Contains(color_id)) {
-                e_color = range.first;
-                shift = color_id - static_cast<int>(range.first);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static bool IsReferenceColor(int color_id)
-    {
-        EColor e_color;
-        int shift;
-        return FindReferenceColor(color_id, e_color, shift);
-    }
-
-    static int ToColorId(EColor e_color, int shift)
-    {
-        return static_cast<int>(e_color) + shift;
-    }
-
-    static std::string ToString(EColor e_color, int shift)
-    {
-        std::ostringstream ss;
-        ss << GetReferenceColorNames().EnumToString(e_color);
-        if(shift > 0)
-            ss << "+" << shift;
-        else if(shift < 0)
-            ss << shift;
-        return ss.str();
-    }
-
-    static std::string ToString(int color_id)
-    {
-        EColor e_color;
-        int shift;
-        if(!FindReferenceColor(color_id, e_color, shift))
-            throw analysis::exception("Unable to find a reference color for the color with id = %1%.") % color_id;
-        return ToString(e_color, shift);
-    }
-
-    static bool TryParse(const std::string& str, EColor& e_color, int& shift)
-    {
-        if(GetReferenceColorNames().TryParse(str, e_color)) {
-            shift = 0;
-            return true;
-        }
-        std::vector<std::string> sub_str;
-        boost::split(sub_str, str, boost::is_any_of("+-"), boost::token_compress_on);
-        if(sub_str.size() != 2 || !GetReferenceColorNames().TryParse(sub_str.at(0), e_color))
-            return false;
-        std::istringstream ss(sub_str.at(1));
-        ss >> shift;
-        int sign = std::find(str.begin(), str.end(), '-') == str.end() ? 1 : -1;
-        shift *= sign;
-        return !ss.fail();
-    }
-};
-
-} // namespace detail
-
 class Color {
 public:
-    Color() { RetrieveTColor(kBlack); }
-    explicit Color(int color_id) { RetrieveTColor(color_id); }
-    explicit Color(const std::string& hex_color)
-    {
-        static const boost::regex hex_color_pattern("^#(?:[0-9a-fA-F]{2}){3}$");
-        if(!boost::regex_match(hex_color, hex_color_pattern))
-            throw analysis::exception("Invalid color '%1%'.") % hex_color;
-        const int color_id = TColor::GetColor(hex_color.c_str());
-        RetrieveTColor(color_id);
-    }
+    Color();
+    explicit Color(int color_id);
+    explicit Color(const std::string& hex_color);
 
-    bool IsSimple() const { return detail::ReferenceColorCollection::IsReferenceColor(GetColorId()); }
-    int GetColorId() const { return GetTColor().GetNumber(); }
-    Color_t GetColor_t() const { return static_cast<Color_t>(GetColorId()); }
-    const TColor& GetTColor() const { return *t_color; }
+    bool IsSimple() const;
+    int GetColorId() const;
+    Color_t GetColor_t() const;
+    const TColor& GetTColor() const;
 
-    std::string ToString() const
-    {
-        if(IsSimple())
-            return detail::ReferenceColorCollection::ToString(GetColorId());
-        return GetTColor().AsHexString();
-    }
-
-    Color CreateTransparentCopy(float alpha) const
-    {
-        return Color(TColor::GetColorTransparent(GetColorId(), alpha));
-    }
+    std::string ToString() const;
+    Color CreateTransparentCopy(float alpha) const;
 
 private:
-    static void CheckComponent(const std::string& name, int value)
-    {
-        static const analysis::Range<int> color_range(0, 255);
-        if(!color_range.Contains(value))
-            throw analysis::exception("Invalid color %1% component value = %2%") % name % value;
-    }
-
-    void RetrieveTColor(int color_id)
-    {
-        t_color = gROOT->GetColor(color_id);
-        if(!t_color)
-            throw analysis::exception("Color with id %1% is not defined.") % color_id;
-    }
+    static void CheckComponent(const std::string& name, int value);
+    void RetrieveTColor(int color_id);
 
 private:
     const TColor* t_color;
 };
 
-inline std::ostream& operator<<(std::ostream& s, const Color& c)
-{
-    s << c.ToString();
-    return s;
-}
-
-inline std::istream& operator>>(std::istream& s, Color& c)
-{
-
-    std::string name;
-    s >> name;
-    EColor e_color;
-    int shift;
-    if(detail::ReferenceColorCollection::TryParse(name, e_color, shift)) {
-        c = Color(detail::ReferenceColorCollection::ToColorId(e_color, shift));
-    } else
-        c = Color(name);
-    return s;
-}
+std::ostream& operator<<(std::ostream& s, const Color& c);
+std::istream& operator>>(std::istream& s, Color& c);
 
 class Font {
 public:
     using Integer = short;
 
-    Font() : _number(4), _precision(2) {}
-    explicit Font(Integer font_code)
-    {
-        ParseFontCode(font_code, _number, _precision);
-        CheckValidity();
-    }
-    Font(Integer font_number, Integer precision)
-        : _number(font_number), _precision(precision)
-    {
-        CheckValidity();
-    }
+    Font();
+    explicit Font(Integer font_code);
+    Font(Integer font_number, Integer precision);
 
-    Integer code() const { return MakeFontCode(_number, _precision); }
-    Integer number() const { return _number; }
-    Integer precision() const { return _precision; }
+    Integer code() const;
+    Integer number() const;
+    Integer precision() const;
 
-    static Integer MakeFontCode(Integer font_number, Integer precision) { return font_number * 10 + precision; }
-    static void ParseFontCode(Integer font_code, Integer& font_number, Integer& precision)
-    {
-        font_number = font_code / 10;
-        precision = font_code % 10;
-    }
-
-    static bool IsValid(Integer font_number, Integer precision)
-    {
-        static const analysis::Range<Integer> font_number_range(1, 15);
-        static const analysis::Range<Integer> precision_range(0, 3);
-        return font_number_range.Contains(font_number) && precision_range.Contains(precision);
-    }
-
-    static bool IsValid(Integer font_code)
-    {
-        Integer font_number, precision;
-        ParseFontCode(font_code, font_number, precision);
-        return IsValid(font_number, precision);
-    }
+    static Integer MakeFontCode(Integer font_number, Integer precision);
+    static void ParseFontCode(Integer font_code, Integer& font_number, Integer& precision);
+    static bool IsValid(Integer font_number, Integer precision);
+    static bool IsValid(Integer font_code);
 
 private:
-    void CheckValidity() const
-    {
-        if(!IsValid(number(), precision()))
-            throw analysis::exception("Invalid font code = %1%.") % code();
-    }
+    void CheckValidity() const;
 
 private:
     Integer _number, _precision;
 };
 
-inline std::ostream& operator<<(std::ostream& s, const Font& f)
-{
-    s << f.code();
-    return s;
-}
-
-inline std::istream& operator>>(std::istream& s, Font& f)
-{
-    Font::Integer font_code;
-    s >> font_code;
-    f = Font(font_code);
-    return s;
-}
+std::ostream& operator<<(std::ostream& s, const Font& f);
+std::istream& operator>>(std::istream& s, Font& f);
 
 enum class TextAlign { LeftBottom = kHAlignLeft + kVAlignBottom, LeftCenter = kHAlignLeft + kVAlignCenter,
                        LeftTop = kHAlignLeft + kVAlignTop, CenterBottom = kHAlignCenter + kVAlignBottom,

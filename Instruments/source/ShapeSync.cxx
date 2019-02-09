@@ -1,6 +1,8 @@
 /*! Produce sync plots between two groups for the selected distributions.
 This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 
+#include <boost/regex.hpp>
+
 #include <TKey.h>
 #include <TCanvas.h>
 #include <TRatioPlot.h>
