@@ -78,7 +78,7 @@ void PdfPrinter::Print(const std::string& title, PlotDescriptor& desc, bool is_l
     canvas->SetTitle(title.c_str());
     canvas->cd();
 
-    {
+    // {
         auto main_pad = plotting::NewPad(page_opt.main_pad);
         std::shared_ptr<TPad> ratio_pad;
         if(page_opt.draw_ratio) {
@@ -133,7 +133,11 @@ void PdfPrinter::Print(const std::string& title, PlotDescriptor& desc, bool is_l
         canvas->Print(output_name.str().c_str(), print_options.str().c_str());
         has_first_page = true;
         has_last_page = is_last;
-    }
+
+        main_pad->Clear();
+        if(ratio_pad)
+            ratio_pad->Clear();
+    // }
 
     canvas->Clear();
 }
