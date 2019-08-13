@@ -13,6 +13,8 @@ parser = argparse.ArgumentParser(
     description='Transfer files using gfal tools.' \
                 '\nRemote format is SITE:path (e.g. T2_IT_Pisa:/store/user/foo/bar)',
                                  formatter_class = lambda prog: argparse.HelpFormatter(prog,width=90))
+parser.add_argument('--include', required=False, default=None, help='regex to match files that should be included')
+parser.add_argument('--exclude', required=False, default=None, help='regex to match files that should be excluded')
 parser.add_argument('--max-tries', required=False, type=int, default=10,
                     help="maximal number of tries before failing")
 parser.add_argument('--verbose', action="store_true", help="Print verbose output.")
@@ -49,7 +51,7 @@ def GetSitePfnPath(site_name, path):
     lfn_to_pfn =storage_desc.findall('lfn-to-pfn')
     return GetPfnPath(lfn_to_pfn, path, 'srmv2')
 
-def CollectFiles(target_desc, sub_folder = ''):
+def CollectFiles(target_desc, include_pattern = None, exclude_pattern = None, sub_folder = ''):
     files = []
     if target_desc.local:
         ls_path = target_desc.path
@@ -81,10 +83,12 @@ def CollectFiles(target_desc, sub_folder = ''):
             rel_name += sub_folder + '/'
         rel_name += item_name
         if is_dir:
-            item_files = CollectFiles(target_desc, rel_name)
+            item_files = CollectFiles(target_desc, include_pattern, exclude_pattern, rel_name)
             files.extend(item_files)
         else:
-            files.append(FileDesc(rel_name, item_size))
+            if (include_pattern is None or re.match(inculde_pattern, rel_name) is not None) \
+                    and (exclude_pattern is None or re.match(exclude_pattern, rel_name) is None):
+                files.append(FileDesc(rel_name, item_size))
     return files
 
 class TargetDesc:
@@ -178,7 +182,7 @@ input = TargetDesc(args.input[0])
 output = TargetDesc(args.output[0], input.input_name)
 print('"{0}" -> "{1}"'.format(input.target_str, output.target_str))
 
-files = CollectFiles(input)
+files = CollectFiles(input, args.include, args.exclude)
 files = sorted(files, key=lambda f: natural_sort_key(f.name))
 
 total_size_MB = 0.
