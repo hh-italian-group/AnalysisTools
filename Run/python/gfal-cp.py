@@ -17,7 +17,8 @@ parser.add_argument('--include', required=False, default=None, help='regex to ma
 parser.add_argument('--exclude', required=False, default=None, help='regex to match files that should be excluded')
 parser.add_argument('--max-tries', required=False, type=int, default=10,
                     help="maximal number of tries before failing")
-parser.add_argument('--verbose', action="store_true", help="Print verbose output.")
+parser.add_argument('--verbose', action="store_true", help="print verbose output")
+parser.add_argument('--dry-run', action="store_true", help="dry run (don't do actual copying)")
 parser.add_argument('input', nargs=1, type=str,
                     help="input location (local or remote)")
 parser.add_argument('output', nargs=1, type=str,
@@ -51,8 +52,37 @@ def GetSitePfnPath(site_name, path):
     lfn_to_pfn =storage_desc.findall('lfn-to-pfn')
     return GetPfnPath(lfn_to_pfn, path, 'srmv2')
 
+def GetRemoteFileInfo(url):
+    p = subprocess.Popen(['gfal-stat {0}'.format(url)], shell=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    if len(err) != 0:
+        raise RuntimeError(err)
+    info_lines = [ s.strip() for s in out.split('\n') if len(s.strip()) != 0 ]
+    if len(info_lines) >= 2:
+        size_info = re.search('^ *Size: *([0-9]*) *(.*)', info_lines[1])
+        if size_info is not None and len(size_info.groups()) == 2:
+            size = int(size_info.group(1))
+            type = size_info.group(2)
+            if type in ['directory', 'regular file']:
+                return size, type == 'directory'
+
+    raise RuntimeError('Unable to get stat for remote file "{0}"'.format(target_desc.url))
+
 def CollectFiles(target_desc, include_pattern = None, exclude_pattern = None, sub_folder = ''):
     files = []
+
+    if len(sub_folder) == 0:
+        if target_desc.local:
+            if os.path.isfile(target_desc.path):
+                files.append(FileDesc(os.path.basename(target_desc.path), os.path.getsize(target_desc.path)))
+                return files, True
+        else:
+            size, is_dir = GetRemoteFileInfo(target_desc.url)
+            if not is_dir:
+                files.append(FileDesc(os.path.basename(target_desc.path)), size)
+                return files, True
+
     if target_desc.local:
         ls_path = target_desc.path
         ls_tool = 'ls'
@@ -83,17 +113,18 @@ def CollectFiles(target_desc, include_pattern = None, exclude_pattern = None, su
             rel_name += sub_folder + '/'
         rel_name += item_name
         if is_dir:
-            item_files = CollectFiles(target_desc, include_pattern, exclude_pattern, rel_name)
+            item_files, _ = CollectFiles(target_desc, include_pattern, exclude_pattern, rel_name)
             files.extend(item_files)
         else:
             if (include_pattern is None or re.match(inculde_pattern, rel_name) is not None) \
                     and (exclude_pattern is None or re.match(exclude_pattern, rel_name) is None):
                 files.append(FileDesc(rel_name, item_size))
-    return files
+    return files, False
 
 class TargetDesc:
     def __init__(self, target_str, input_name = ''):
         self.target_str = target_str
+        self.single_file = False
         split_target = target_str.split(':')
         if len(split_target) == 1:
             self.local = True
@@ -116,7 +147,7 @@ class TargetDesc:
                 self.full_path = self.path
             else:
                 self.full_url = self.url
-            self.input_name = [ s for s in self.path.split('/') if len(s) != 0 ][-1]
+            self.input_name = os.path.basename(self.path)
 
         if self.local:
             self.abs_path = os.path.abspath(self.full_path)
@@ -155,35 +186,37 @@ class TargetDesc:
 
     def GetFullPath(self, file_name, pfn = True):
         if self.local:
-            local_path = os.path.join(self.abs_path, file_name)
+            local_path = os.path.join(self.abs_path, file_name) if not self.single_file else self.abs_path
             if pfn:
                 local_path = 'file://' + local_path
             return local_path
-        return self.full_url + '/' + file_name
-
+        return self.full_url + '/' + file_name if not self.single_file else self.full_url
 
 def TransferFile(source_file, destination_file, number_of_threads):
     cmd = 'gfal-copy -p -n {0} "{1}" "{2}"'.format(number_of_threads, source_file, destination_file)
     if args.verbose:
         print('> {0}'.format(cmd))
-    p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    ok = len(err) == 0 and p.returncode == 0
-    if args.verbose:
-        print(out)
-    if not ok:
-        print(err)
+    if args.dry_run:
+        ok = True
+    else:
+        p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        ok = len(err) == 0 and p.returncode == 0
+        if args.verbose:
+            print(out)
+        if not ok:
+            print(err)
     return ok
 
 def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
     return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 input = TargetDesc(args.input[0])
-output = TargetDesc(args.output[0], input.input_name)
-print('"{0}" -> "{1}"'.format(input.target_str, output.target_str))
-
-files = CollectFiles(input, args.include, args.exclude)
+files, input.single_file = CollectFiles(input, args.include, args.exclude)
 files = sorted(files, key=lambda f: natural_sort_key(f.name))
+input_prefix = '' if input.single_file else input.input_name
+output = TargetDesc(args.output[0], input_prefix)
+print('"{0}" -> "{1}"'.format(input.target_str, output.target_str))
 
 total_size_MB = 0.
 total_n_files = len(files)
@@ -196,9 +229,9 @@ try_id = 1
 processed_MB = 0.
 while file_id < len(files):
     file = files[file_id]
-    display_name = os.path.join(input.input_name, file.name)
+    display_name = os.path.join(input.input_name, file.name) if not input.single_file else file.name
     existing_file_size = output.GetFileSize(file.name)
-    if existing_file_size == file.size:
+    if existing_file_size == file.size or (args.dry_run and try_id > 1):
         print('OK {0}'.format(display_name))
         file_id += 1
         try_id = 1
