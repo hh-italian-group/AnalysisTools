@@ -25,6 +25,13 @@ parser.add_argument('output', nargs=1, type=str,
                     help="output location (local or remote)")
 args = parser.parse_args()
 
+def Run(cmd):
+    if args.verbose:
+        print('> {0}'.format(cmd))
+    p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    return out, err, p.returncode
+
 class FileDesc:
     def __init__(self, name, size):
         self.name = name
@@ -53,21 +60,19 @@ def GetSitePfnPath(site_name, path):
     return GetPfnPath(lfn_to_pfn, path, 'srmv2')
 
 def GetRemoteFileInfo(url):
-    p = subprocess.Popen(['gfal-stat {0}'.format(url)], shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
+    out, err, returncode = Run('gfal-stat {0}'.format(url))
     if len(err) != 0:
         raise RuntimeError(err)
     info_lines = [ s.strip() for s in out.split('\n') if len(s.strip()) != 0 ]
     if len(info_lines) >= 2:
-        size_info = re.search('^ *Size: *([0-9]*) *(.*)', info_lines[1])
+        size_info = re.search('^ *Size: *([0-9]*) *\t*(.*)', info_lines[1])
         if size_info is not None and len(size_info.groups()) == 2:
             size = int(size_info.group(1))
             type = size_info.group(2)
             if type in ['directory', 'regular file']:
                 return size, type == 'directory'
 
-    raise RuntimeError('Unable to get stat for remote file "{0}"'.format(target_desc.url))
+    raise RuntimeError('Unable to get stat for remote file "{0}".\nRemote output:\n{1}'.format(url, out))
 
 def CollectFiles(target_desc, include_pattern = None, exclude_pattern = None, sub_folder = ''):
     files = []
@@ -92,10 +97,7 @@ def CollectFiles(target_desc, include_pattern = None, exclude_pattern = None, su
 
     if len(sub_folder) != 0:
         ls_path += '/' + sub_folder
-    p = subprocess.Popen(['{0} -l {1}'.format(ls_tool, ls_path)], shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-
+    out, err, returncode = Run('{0} -l {1}'.format(ls_tool, ls_path))
     if len(err) != 0:
         raise RuntimeError(err)
 
@@ -158,10 +160,8 @@ class TargetDesc:
             if os.path.isfile(full_path):
                 return os.path.getsize(full_path)
             return -1
-        p = subprocess.Popen(['gfal-ls -l {0}'.format(full_path)], shell=True,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
 
+        out, err, returncode = Run('gfal-ls -l {0}'.format(full_path))
         if len(err) != 0:
             return -1
         item_lines = [ s.strip() for s in out.split('\n') if len(s.strip()) != 0 ]
@@ -178,9 +178,7 @@ class TargetDesc:
             if force or os.path.isfile(full_path):
                 os.remove(full_path)
         else:
-            p = subprocess.Popen(['gfal-rm {0}'.format(full_path)], shell=True,
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = p.communicate()
+            out, err, returncode = Run('gfal-rm {0}'.format(full_path))
             if force and len(err) != 0:
                 raise RuntimeError('Unable to delete file "{0}".'.format(file_name))
 
@@ -199,9 +197,8 @@ def TransferFile(source_file, destination_file, number_of_threads):
     if args.dry_run:
         ok = True
     else:
-        p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        ok = len(err) == 0 and p.returncode == 0
+        out, err, returncode = Run(cmd)
+        ok = len(err) == 0 and returncode == 0
         if args.verbose:
             print(out)
         if not ok:

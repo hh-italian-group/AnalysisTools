@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(
     description='List files using gfal tools.' \
                 '\nRemote format is SITE:path (e.g. T2_IT_Pisa:/store/user/foo/bar)',
                                  formatter_class = lambda prog: argparse.HelpFormatter(prog,width=90))
+parser.add_argument('--verbose', action="store_true", help="print verbose output")
 parser.add_argument('path', nargs=1, type=str, help="remote location")
 args = parser.parse_args()
 
@@ -48,4 +49,7 @@ class TargetDesc:
         self.url = GetSitePfnPath(self.site_name, self.path)
 
 target = TargetDesc(args.path[0])
-subprocess.call(['gfal-ls -l {0}'.format(target.url)], shell=True)
+cmd = 'gfal-ls -l {0}'.format(target.url)
+if args.verbose:
+    print('> {0}'.format(cmd))
+subprocess.call([cmd], shell=True)
