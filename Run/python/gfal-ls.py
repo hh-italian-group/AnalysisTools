@@ -31,8 +31,14 @@ def GetPfnPath(lfn_to_pfn, path, protocol):
     raise RuntimeError("Protocol {0} not found".format(protocol))
 
 def GetSitePfnPath(site_name, path):
-    desc_file = '/cvmfs/cms.cern.ch/SITECONF/{0}/PhEDEx/storage.xml'.format(site_name)
-    if not os.path.isfile(desc_file):
+    desc_path = '/cvmfs/cms.cern.ch/SITECONF/{0}/PhEDEx'.format(site_name)
+    desc_file_names = [ 'storage.xml', 'storage_disk.xml' ]
+    desc_file_found = False
+    for name_cand in desc_file_names:
+        desc_file = '{0}/{1}'.format(desc_path, name_cand)
+        desc_file_found = os.path.isfile(desc_file)
+        if desc_file_found: break
+    if not desc_file_found:
         raise RuntimeError("Storage description for {0} not found.".format(site_name))
     storage_desc = xml.etree.ElementTree.parse(desc_file).getroot()
     lfn_to_pfn =storage_desc.findall('lfn-to-pfn')
