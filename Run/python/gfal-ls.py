@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(
     description='List files using gfal tools.' \
                 '\nRemote format is SITE:path (e.g. T2_IT_Pisa:/store/user/foo/bar)',
                                  formatter_class = lambda prog: argparse.HelpFormatter(prog,width=90))
+parser.add_argument('--verbose', action="store_true", help="print verbose output")
 parser.add_argument('path', nargs=1, type=str, help="remote location")
 args = parser.parse_args()
 
@@ -30,8 +31,14 @@ def GetPfnPath(lfn_to_pfn, path, protocol):
     raise RuntimeError("Protocol {0} not found".format(protocol))
 
 def GetSitePfnPath(site_name, path):
-    desc_file = '/cvmfs/cms.cern.ch/SITECONF/{0}/PhEDEx/storage.xml'.format(site_name)
-    if not os.path.isfile(desc_file):
+    desc_path = '/cvmfs/cms.cern.ch/SITECONF/{0}/PhEDEx'.format(site_name)
+    desc_file_names = [ 'storage.xml', 'storage_disk.xml' ]
+    desc_file_found = False
+    for name_cand in desc_file_names:
+        desc_file = '{0}/{1}'.format(desc_path, name_cand)
+        desc_file_found = os.path.isfile(desc_file)
+        if desc_file_found: break
+    if not desc_file_found:
         raise RuntimeError("Storage description for {0} not found.".format(site_name))
     storage_desc = xml.etree.ElementTree.parse(desc_file).getroot()
     lfn_to_pfn =storage_desc.findall('lfn-to-pfn')
@@ -48,4 +55,7 @@ class TargetDesc:
         self.url = GetSitePfnPath(self.site_name, self.path)
 
 target = TargetDesc(args.path[0])
-subprocess.call(['gfal-ls -l {0}'.format(target.url)], shell=True)
+cmd = 'gfal-ls -l {0}'.format(target.url)
+if args.verbose:
+    print('> {0}'.format(cmd))
+subprocess.call([cmd], shell=True)
