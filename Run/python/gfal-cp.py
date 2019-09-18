@@ -16,9 +16,13 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--include', required=False, default=None, help='regex to match files that should be included')
 parser.add_argument('--exclude', required=False, default=None, help='regex to match files that should be excluded')
 parser.add_argument('--max-tries', required=False, type=int, default=10,
-                    help="maximal number of tries before failing")
+                    help="the maximum number of tries before failing")
+parser.add_argument('--n-streams', required=False, type=int, default=2,
+                    help="the maximum number of parallel streams to use for the copy")
 parser.add_argument('--verbose', action="store_true", help="print verbose output")
 parser.add_argument('--dry-run', action="store_true", help="dry run (don't do actual copying)")
+parser.add_argument('--xrootd', action="store_true",
+                    help="use xrootd to copy (works only for remote -> local transfers)")
 parser.add_argument('input', nargs=1, type=str,
                     help="input location (local or remote)")
 parser.add_argument('output', nargs=1, type=str,
@@ -142,6 +146,7 @@ class TargetDesc:
             self.site_name = split_target[0]
             self.path = split_target[1]
             self.url = GetSitePfnPath(self.site_name, self.path)
+            self.xrd_url = 'root://xrootd-cms.infn.it/' + self.path
         else:
             raise RuntimeError('Invalid target string {0}'.format(target_str))
 
@@ -150,11 +155,13 @@ class TargetDesc:
                 self.full_path = os.path.join(self.path, input_name)
             else:
                 self.full_url = self.url + '/' + input_name
+                self.full_xrd_url = self.xrd_url + '/' + input_name
         else:
             if self.local:
                 self.full_path = self.path
             else:
                 self.full_url = self.url
+                self.full_xrd_url = self.xrd_url
             self.input_name = os.path.basename(self.path)
 
         if self.local:
@@ -188,15 +195,19 @@ class TargetDesc:
             if force and len(err) != 0:
                 raise RuntimeError('Unable to delete file "{0}".'.format(file_name))
 
-    def GetFullPath(self, file_name, pfn = True):
+    def GetFullPath(self, file_name, pfn = True, xrd=False):
         if self.local:
             local_path = os.path.join(self.abs_path, file_name) if not self.single_file else self.abs_path
             if pfn:
                 local_path = 'file://' + local_path
             return local_path
-        return self.full_url + '/' + file_name if not self.single_file else self.full_url
+        url = self.full_xrd_url if xrd else self.full_url
+        return url + '/' + file_name if not self.single_file else url
 
 def TransferFile(source_file, destination_file, number_of_threads):
+    #if xrd:
+    #    cmd = 'xrdcp --streams {0} "{1}" "{2}"'.format(number_of_threads, source_file, destination_file)
+    #else:
     cmd = 'gfal-copy -p -n {0} "{1}" "{2}"'.format(number_of_threads, source_file, destination_file)
     if args.verbose:
         print('> {0}'.format(cmd))
@@ -248,7 +259,9 @@ while file_id < len(files):
             .format(file_id, total_n_files, float(file_id) / total_n_files * 100.,
                     processed_MB, total_size_MB, processed_MB / total_size_MB * 100.)
     print('Transfering "{0}" ({1:.1f} MiB, try {2})...'.format(display_name, file.size_MB, try_id))
-    transfered = TransferFile(input.GetFullPath(file.name), output.GetFullPath(file.name), 2)
+    input_full_name = input.GetFullPath(file.name, xrd=args.xrootd)
+    output_full_name = output.GetFullPath(file.name, xrd=args.xrootd)
+    transfered = TransferFile(input_full_name, output_full_name, args.n_streams)
     if not transfered:
         output.DeleteFile(file.name, False)
     try_id += 1
