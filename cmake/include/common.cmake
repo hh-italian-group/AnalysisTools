@@ -34,7 +34,7 @@ set(CXX_WARNING_FLAGS "-Weverything -Wno-missing-prototypes -Wno-unused-member-f
                        -Wno-exit-time-destructors -Wno-newline-eof -Wno-c++98-compat-pedantic \
                        -Wno-c++98-compat -Wno-disabled-macro-expansion -Wno-system-headers -Wno-unused-macros \
                        -Wno-shadow -Wno-unknown-pragmas -Wno-format-nonliteral -Wno-double-promotion -Wno-float-equal \
-                       -Wno-padded -Wno-missing-braces")
+                       -Wno-padded -Wno-missing-braces -Wno-used-but-marked-unused")
 # -ftime-report
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
@@ -63,7 +63,11 @@ set(TEST_LIST)
 foreach(exe_source ${EXE_SOURCE_LIST})
     get_filename_component(exe_name "${exe_source}" NAME_WE)
     message("Adding executable \"${exe_name}\"...")
-    add_executable("${exe_name}" "${exe_source}")
+    if(APPLE)
+        add_executable("${exe_name}" "${exe_source}" "${RootDict}")
+    else()
+        add_executable("${exe_name}" "${exe_source}")
+    endif()
     target_link_libraries("${exe_name}" ${ALL_LIBS})
     if(exe_name MATCHES "_t$")
         list(APPEND TEST_LIST "${exe_name}")
