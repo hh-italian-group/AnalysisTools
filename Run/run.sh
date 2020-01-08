@@ -5,9 +5,11 @@
 if [ $# -lt 1 ] ; then
     printf "run.sh: compile and execute cxx target.\n"
     printf "Usage:\n"
-    printf "./run.sh target_name [args]\tcompile and execute the target by its name;\n"
-    printf "./run.sh --list\t\t\tlist all available targets.\n"
-    printf "./run.sh --make target_name\tcompile target without executing it.\n"
+    printf "./run.sh target_name [args]     compile and execute the target by its name.\n"
+    printf "./run.sh --list                 list all available targets.\n"
+    printf "./run.sh --update               update build areas.\n"
+    printf "./run.sh --make target_name     compile target without executing it.\n"
+    printf "./run.sh --make-all             compile all targets.\n"
     exit 1
 fi
 
@@ -37,6 +39,14 @@ if [ ! -f .rootrc ] ; then
     echo "RooFit.Banner: no" > .rootrc
 fi
 
+command -v cmake3 >/dev/null 2>&1
+RESULT=$?
+if [ $RESULT -eq 0 ] ; then
+    CMAKE=cmake3
+else
+    CMAKE=cmake
+fi
+
 WORKING_PATH=$(pwd)
 cd "$BUILD_PATH"
 PROJECTS=$(ls)
@@ -44,6 +54,25 @@ TARGET_FOUND=0
 EXE_NAME=""
 
 for PROJECT in $PROJECTS ; do
+    if [ "$NAME" = "--update" ] ; then
+        cd $PROJECT
+        $CMAKE .
+        RESULT=$?
+        if [ $RESULT -ne 0 ] ; then
+            exit $RESULT
+        fi
+        cd ..
+        continue
+    elif [ "$NAME" = "--make-all" ] ; then
+        cd $PROJECT
+        $CMAKE --build . -- -j4
+        RESULT=$?
+        if [ $RESULT -ne 0 ] ; then
+            exit $RESULT
+        fi
+        cd ..
+        continue
+    fi
     make_target_list "$PROJECT"
     if [ "$NAME" = "--list" ] ; then
         if [ "$TARGET_LIST" != "" ] ; then
@@ -54,7 +83,7 @@ for PROJECT in $PROJECTS ; do
         if [ "$NAME" = "$TARGET" ] ; then
             TARGET_FOUND=1
             cd "$PROJECT"
-            make -j4 "$NAME"
+            $CMAKE --build . --target "$NAME" -- -j4
             RESULT=$?
             if [ $RESULT -ne 0 ] ; then
                 echo "ERROR: failed to compile $NAME."
@@ -66,7 +95,7 @@ for PROJECT in $PROJECTS ; do
     fi
 done
 
-if [ "$NAME" = "--list" ] ; then exit 1 ; fi
+if [ "$NAME" = "--list" -o "$NAME" = "--update"  -o "$NAME" = "--make-all" ] ; then exit 0 ; fi
 
 cd "$WORKING_PATH"
 if ! [ -f "$EXE_NAME" ] ; then

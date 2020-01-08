@@ -21,8 +21,12 @@ SOURCE_ROOT="$(pwd)"
 CC_COMPILER=clang
 CXX_COMPILER=clang++
 
-if [ "x$CMAKE" = "x" ] ; then
-	CMAKE=cmake3
+command -v cmake3 >/dev/null 2>&1
+RESULT=$?
+if [ $RESULT -eq 0 ] ; then
+    CMAKE=cmake3
+else
+    CMAKE=cmake
 fi
 
 for PROJECT_NAME in "${@:2}" ; do
