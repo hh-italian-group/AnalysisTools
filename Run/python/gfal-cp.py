@@ -19,6 +19,8 @@ parser.add_argument('--max-tries', required=False, type=int, default=10,
                     help="the maximum number of tries before failing")
 parser.add_argument('--n-streams', required=False, type=int, default=2,
                     help="the maximum number of parallel streams to use for the copy")
+parser.add_argument('--timeout', required=False, type=int, default=1800,
+                    help="timeout for the single file transfer operation")
 parser.add_argument('--verbose', action="store_true", help="print verbose output")
 parser.add_argument('--dry-run', action="store_true", help="dry run (don't do actual copying)")
 parser.add_argument('--xrootd', action="store_true",
@@ -208,7 +210,8 @@ def TransferFile(source_file, destination_file, number_of_threads):
     #if xrd:
     #    cmd = 'xrdcp --streams {0} "{1}" "{2}"'.format(number_of_threads, source_file, destination_file)
     #else:
-    cmd = 'gfal-copy -p -n {0} "{1}" "{2}"'.format(number_of_threads, source_file, destination_file)
+    cmd = 'gfal-copy -p -n {0} -t {1} -T {1} "{2}" "{3}"'.format(number_of_threads, args.timeout,
+                                                                 source_file, destination_file)
     if args.verbose:
         print('> {0}'.format(cmd))
     if args.dry_run:
