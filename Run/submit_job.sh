@@ -79,23 +79,23 @@ determine_n_slots "${@:5}"
 read -d '' SCRIPT << EOF
 #!/bin/sh
 cd "$OUTPUT_PATH"
-echo "Job started at \$(date)." >> $LOG_NAME
+echo "Job started at \$(date --rfc-3339=seconds)." >> $LOG_NAME
 $SOURCE_LINE
 eval \$( scramv1 runtime -sh )
-$EXE_NAME ${ARG_STR[@]} &>> $LOG_NAME
+/usr/bin/time --verbose $EXE_NAME ${ARG_STR[@]} &>> $LOG_NAME
 RESULT=\$\?
 if [ \$RESULT -eq 0 ] ; then
     MSG="successfully ended"
 else
     MSG="failed"
 fi
-echo "Job \$MSG at \$(date)." >> $LOG_NAME
+echo "Job \$MSG at \$(date --rfc-3339=seconds)." >> $LOG_NAME
 EOF
 
 echo "$SCRIPT" > "$SCRIPT_NAME"
 chmod u+x "$SCRIPT_NAME"
 
-echo "Job submission at $(date)." > $LOG_NAME
+echo "Job submission at $(date --rfc-3339=seconds)." > $LOG_NAME
 
 if [ $QUEUE = "interactive" ] ; then
     "$SCRIPT_PATH"
