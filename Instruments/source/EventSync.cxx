@@ -267,6 +267,9 @@ private:
         TPad pad1("pad1", "", 0, 0.2, 1, 1);
         TPad pad2("pad2", "", 0, 0, 1, 0.2);
 
+        pad1.Draw();
+        pad2.Draw();
+
         pad1.cd();
 
         const double max = std::max(hists[0]->GetMaximum(), hists[1]->GetMaximum());
@@ -296,10 +299,10 @@ private:
 
         TLine line;
         line.DrawLine(HDiff->GetXaxis()->GetXmin(), 1, HDiff->GetXaxis()->GetXmax(), 1);
-        canvas.Clear();
-        pad1.Draw();
-        pad2.Draw();
         PrintCanvas(title);
+        pad1.Clear();
+        pad2.Clear();
+        canvas.Clear();
     }
 
     void Draw2DHistogram(Hist2DPtr H_0vs1, const std::string& selection_label,
@@ -317,14 +320,16 @@ private:
         H_0vs1->SetStats(0);
 
         TPad pad1("pad1","", 0, 0, 1, 1);
+        pad1.Draw();
         pad1.cd();
         H_0vs1->Draw("colz");
         const size_t n_events = static_cast<size_t>(H_0vs1->Integral(0, H_0vs1->GetNbinsX() + 1,
                                                                      0, H_0vs1->GetNbinsY() + 1));
         DrawTextLabels({n_events, n_events});
-        canvas.Clear();
-        pad1.Draw();
+
         PrintCanvas(title + " 2D", isLastDraw);
+        pad1.Clear();
+        canvas.Clear();
     }
 
     void DrawTextLabels(std::array<size_t, N> n_events)
@@ -604,6 +609,7 @@ private:
             output_name << ")";
         isFirstPage = false;
         canvas.Print(output_name.str().c_str(), print_options.str().c_str());
+
     }
 
 private:
