@@ -41,11 +41,13 @@ public:
 
     static const ColorRangeMap& GetReferenceColorRanges()
     {
-        static ColorRangeMap ranges;
-        if(!ranges.size()) {
+        static const auto init_ranges = []() {
+            ColorRangeMap ranges;
             for(const auto& rel_range : GetReferenceColorRelativeRanges())
                 ranges[rel_range.first] = rel_range.second.ToAbsoluteRange(static_cast<int>(rel_range.first));
-        }
+            return ranges;
+        };
+        static const ColorRangeMap ranges = init_ranges();
         return ranges;
     }
 
