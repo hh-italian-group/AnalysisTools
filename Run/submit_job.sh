@@ -98,9 +98,10 @@ chmod u+x "$SCRIPT_NAME"
 echo "Job submission at $(date --rfc-3339=seconds)." > $LOG_NAME
 
 if [ $QUEUE = "interactive" ] ; then
+	echo "> $SCRIPT_PATH"
     "$SCRIPT_PATH"
 elif [ $SITE = "Pisa" ] ; then
-    bsub -q "$QUEUE" -n $N_SLOTS -J "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
+    bsub -q "$QUEUE" -R "select[mem>2047] rusage[mem=2048]" -n $N_SLOTS -J "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 elif [ $SITE = "Bari" -o $SITE = "Milan" ] ; then
     qsub -q "$QUEUE" -N "$JOB_NAME" "$SCRIPT_PATH" 2>&1 | tee -a $LOG_NAME
 else
