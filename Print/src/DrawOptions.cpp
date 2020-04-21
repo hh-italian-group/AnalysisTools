@@ -47,7 +47,7 @@ float Page::GetRatioPadSizeSF() const
 
 PositionedElement::PositionedElement(const Item& opt)
 {
-    READ_ALL(pos, pos_ref);
+    READ_ALL(pos, pos_ref)
 }
 
 Legend::Legend(const Item& opt) : PositionedElement(opt)
@@ -57,7 +57,7 @@ Legend::Legend(const Item& opt) : PositionedElement(opt)
 
 Text::Text(const Item& opt) : PositionedElement(opt)
 {
-    READ_ALL(text_size, line_spacing, angle, font, align, color);
+    READ_ALL(text_size, line_spacing, angle, font, align, color)
     std::string text_str;
     opt.Read("text", text_str);
     SetText(text_str);
@@ -72,7 +72,7 @@ void Text::SetText(std::string text_str)
 Histogram::Histogram(const Item& opt)
 {
     READ_ALL(fill_style, fill_color, line_style, line_width, line_color, marker_style, marker_size, marker_color,
-             legend_title, legend_style, draw_opt, unc_hist, blind, apply_syst_unc);
+             legend_title, legend_style, draw_opt, unc_hist, blind, apply_syst_unc)
 }
 
 bool Histogram::DrawUnc() const { return !unc_hist.empty(); }
