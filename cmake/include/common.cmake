@@ -1,9 +1,9 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${AnalysisTools_DIR}/cmake/modules")
 
 find_package(ROOT REQUIRED COMPONENTS Core Hist RIO Tree Physics Graf Gpad Matrix MathCore GenVector TMVA RooFitCore RooFit)
-find_package(BoostEx REQUIRED COMPONENTS program_options filesystem regex system thread iostreams unit_test_framework)
+find_package(BoostEx REQUIRED COMPONENTS program_options filesystem regex system thread iostreams unit_test_framework stacktrace_addr2line)
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${ROOT_INCLUDE_DIR})
-set(ALL_LIBS ${Boost_LIBRARIES} ${ROOT_LIBRARIES} pthread)
+set(ALL_LIBS ${Boost_LIBRARIES} ${ROOT_LIBRARIES} pthread dl)
 
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 SET(CMAKE_INSTALL_RPATH "${Boost_LIBRARY_DIRS};${ROOT_LIBRARY_DIR}")
@@ -45,8 +45,7 @@ else()
 endif()
 
 set(CXX_COMMON_FLAGS "${CXX_STD_FLAG} -pedantic ${CXX_WARNING_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CXX_COMMON_FLAGS} -O3")
-set(CMAKE_CXX_FLAGS_DEBUG "${CXX_COMMON_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "${CXX_COMMON_FLAGS} -O3 -gline-tables-only")
 
 set(LinkDef "${AnalysisTools_DIR}/Core/include/LinkDef.h")
 set(RootDict "${CMAKE_BINARY_DIR}/RootDictionaries.cpp")

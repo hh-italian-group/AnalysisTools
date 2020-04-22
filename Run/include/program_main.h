@@ -10,6 +10,7 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #include <TROOT.h>
 #include <TH1.h>
 #include <TH2.h>
+#include "AnalysisTools/Core/include/exception.h"
 
 #define REQ_ARG(type, name) run::Argument<type> name{#name, ""}
 #define OPT_ARG(type, name, default_value) run::Argument<type> name{#name, "", default_value}
@@ -77,6 +78,9 @@ int Main(int argc, char* argv[], const Options& options, const options_descripti
             return PRINT_ARGS_EXIT_CODE;
         Program program(options);
         program.Run();
+    } catch(analysis::exception& e) {
+        std::cerr << "ERROR: " << e.what() << "\nStack trace:\n" << e.stacktrace() << std::endl;
+        return ERROR_EXIT_CODE;
     } catch(std::exception& e) {
         std::cerr << "ERROR: " << e.what() << std::endl;
         return ERROR_EXIT_CODE;
