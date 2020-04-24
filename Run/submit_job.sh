@@ -23,29 +23,10 @@ if [ $RESULT -ne 0 ] ; then
     exit 1
 fi
 
-mkdir -p "$OUTPUT_PATH"
-if [ ! -d "$OUTPUT_PATH" ] ; then
-    echo "ERROR: can't create output path '$OUTPUT_PATH'."
-    exit 1
-fi
-cd "$OUTPUT_PATH"
-OUTPUT_PATH="$(pwd)"
-
 if [ -d "/gpfs/ddn" ] ; then SITE="Pisa"
 elif [ -d "/lustre" ] ;  then SITE="Bari"
 elif [ -d "/gwpool" ] ;  then SITE="Milan"
 else SITE="CERN" ; fi
-
-if [ $SITE = "Pisa" -o $SITE = "Bari" -o $SITE = "Milan" ] ; then
-    SOURCE_LINE="source /cvmfs/cms.cern.ch/cmsset_default.sh"
-else
-    SOURCE_LINE=
-fi
-
-SCRIPT_NAME="run_job.sh"
-SCRIPT_PATH="$PWD/$SCRIPT_NAME"
-LOG_NAME="run_job.log"
-
 
 function arg_to_str {
     local whitespace="[[:space:]]"
@@ -75,6 +56,37 @@ function determine_n_slots {
 
 arg_to_str "${@:5}"
 determine_n_slots "${@:5}"
+
+if [ $SITE = "Pisa" -a $QUEUE != "interactive" ] ; then
+    QUEUE_SLOTS=($(bqueues $QUEUE | awk 'NR>1{print $4" "$8}'))
+    NUM_REGEX='^[0-9]+$'
+    if [[ ${QUEUE_SLOTS[1]} =~ $NUM_REGEX && ${QUEUE_SLOTS[2]} =~ $NUM_REGEX ]] ; then
+        if (( ${QUEUE_SLOTS[2]} + $N_SLOTS > ${QUEUE_SLOTS[1]} )) ; then
+            echo "ERROR: No slots availabe in $QUEUE queue." \
+                 " ${QUEUE_SLOTS[2]} of ${QUEUE_SLOTS[1]} are currently in use."
+            exit 1
+        fi
+    fi
+fi
+
+mkdir -p "$OUTPUT_PATH"
+if [ ! -d "$OUTPUT_PATH" ] ; then
+    echo "ERROR: can't create output path '$OUTPUT_PATH'."
+    exit 1
+fi
+cd "$OUTPUT_PATH"
+OUTPUT_PATH="$(pwd)"
+
+if [ $SITE = "Pisa" -o $SITE = "Bari" -o $SITE = "Milan" ] ; then
+    SOURCE_LINE="source /cvmfs/cms.cern.ch/cmsset_default.sh"
+else
+    SOURCE_LINE=
+fi
+
+SCRIPT_NAME="run_job.sh"
+SCRIPT_PATH="$PWD/$SCRIPT_NAME"
+LOG_NAME="run_job.log"
+
 
 read -d '' SCRIPT << EOF
 #!/bin/sh
