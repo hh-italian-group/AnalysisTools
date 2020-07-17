@@ -105,7 +105,7 @@ echo "Job \$MSG at \$(date --rfc-3339=seconds)." >> $LOG_NAME
 EOF
 
 echo "$SCRIPT" > "$SCRIPT_NAME"
-chmod u+x "$SCRIPT_NAME"
+chmod a+x "$SCRIPT_NAME"
 
 echo "Job submission at $(date --rfc-3339=seconds)." > $LOG_NAME
 
