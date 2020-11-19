@@ -18,8 +18,13 @@ fi
 
 BUILD_ROOT="$1"
 SOURCE_ROOT="$(pwd)"
-CC_COMPILER=clang
-CXX_COMPILER=clang++
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    CC_COMPILER=/usr/bin/clang
+    CXX_COMPILER=/usr/bin/clang++
+else
+    CC_COMPILER=clang
+    CXX_COMPILER=clang++
+fi
 
 command -v cmake3 >/dev/null 2>&1
 RESULT=$?

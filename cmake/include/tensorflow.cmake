@@ -31,6 +31,7 @@ if(scram_path)
 
     set(TF_INCLUDES ${eigen_INCLUDE} ${protobuf_INCLUDE} ${tbb_INCLUDE} ${tensorflow_INCLUDE})
     set(TF_LIBRARIES ${protobuf_LIB} ${tensorflow-framework_LIB} ${tensorflow-cc_LIB} $ENV{CMSSW_RELEASE_BASE}/lib/$ENV{SCRAM_ARCH}/libPhysicsToolsTensorFlow.so)
+    set(TF_AVAILABLE)
 else()
-    message(FATAL_ERROR "Standalone tensorflow support is not implemented")
+    message("WARNING: standalone tensorflow support is not implemented")
 endif()

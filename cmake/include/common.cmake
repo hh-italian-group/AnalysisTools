@@ -17,7 +17,9 @@ else()
     set(CMSSW_RELEASE_BASE_SRC "$ENV{CMSSW_RELEASE_BASE_SRC}")
 endif()
 
-include_directories(SYSTEM "${CMSSW_RELEASE_BASE_SRC}")
+if(EXISTS "${CMSSW_RELEASE_BASE_SRC}")
+    include_directories(SYSTEM "${CMSSW_RELEASE_BASE_SRC}")
+endif()
 
 get_filename_component(CMSSW_BASE_SRC "${AnalysisTools_DIR}" DIRECTORY)
 include_directories("${CMSSW_BASE_SRC}" "${AnalysisTools_DIR}/Core/include" "${PROJECT_SOURCE_DIR}")

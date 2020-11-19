@@ -4,13 +4,13 @@ This file is part of https://github.com/hh-italian-group/AnalysisTools. */
 #pragma once
 
 #include <algorithm>
+#include <iostream>
+#include <set>
 #include <stdexcept>
 #include <sstream>
 #include <memory>
-#include <iostream>
-#include <unordered_map>
-#include <memory>
 #include <mutex>
+#include <unordered_map>
 
 #include <TFile.h>
 #include <TTree.h>
